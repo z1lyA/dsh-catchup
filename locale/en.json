@@ -1,7 +1,7 @@
 {
   "meta": {
-    "title": "Session Digest",
-    "description": "A right-column briefing for the current session: where it stands and what is waiting on you. No model calls.",
+    "title": "Catch up",
+    "description": "A right-column panel for the session you just switched to: where it stopped, and what is waiting on you. No model calls.",
     "detail": "docs/DETAIL.md"
   }
 }

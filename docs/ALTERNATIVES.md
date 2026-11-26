@@ -48,7 +48,7 @@
 
 - `lastState(turnOutline)` — 从最后一轮取现状句
 - `pendingOf(session)` — 按优先级算出"待你拍板"的那一条
-- `digestLine(...)` — 压成一行
+- `catchupLine(...)` — 压成一行
 
 ## 数据来源备查（2026-11 于 DSH 0.2.2-rc.5 验证）
 

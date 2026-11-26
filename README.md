@@ -1,45 +1,71 @@
-# 会话摘要 · dsh-session-digest
+# 接上 · dsh-catchup
 
-DeepSeek Harness 的右侧栏插件：**进一个会话之前，先读它的一份简报。**
+> 你切回一个会话，第一句话总是「我刚才干到哪了？」
+> 这个插件就是那一句话的答案。
 
-打开右栏的「会话摘要」标签，一眼看到：
+DeepSeek Harness 的右侧栏插件。点一下对话头部的「接上」，右栏打开，一眼看到：
 
-- 这个会话**现在停在哪**（最后一轮它说了什么，压成一两句）
-- **有没有事等你拍板**（待批准的命令 / agent 问你的问题及选项 / 没做完的 todo / 上一轮报错）
-- 最近几轮发生了什么
-- 轮次、上次互动、token 占用
+- **需要你拍板**（待批准的命令 / 它问你的问题及选项 / 没做完的活 / 没事等你）
+- **现在停在哪**（最后一轮它自己怎么说的，压成一两句）
+- **最近几轮**（每轮「你问 / 它答」各一句，可展开全部）
+- **状态**（多少轮、上次动是什么时候、上下文烧了多少、模型、目录）
 
 看完关掉，进去接着干。
 
+![面板结构](docs/preview.svg)
+
 ## 零模型调用
 
-全部数据来自 DSH 已经在本地算好的**会话投影**，插件一次模型调用都不发，也不烧 token：
+全部数据来自 DSH 已经在本地折好的**会话投影**，插件一次模型调用都不发，也不烧 token；对当前会话更是**零额外请求**：
 
 | 显示的东西 | 来源 |
 |---|---|
 | 现状句、最近几轮 | `turnOutline` 投影（每轮 prompt ≤50 字 + response ≤120 字） |
 | 待你拍板的问题原文与选项 | `userQuestions` 投影 |
 | 待批准 / 运行中 / 未读 | `useSessionStatus()` 实时推送 |
-| 未完成的 todo | `todos` 投影 |
-| 轮次、token、模型 | `sessionStats` / `tokenUsage` / `modelSelection` |
-| 会话标题、目录、上次互动 | `session/list` 摘要块 |
+| 没做完的活 | `todos` 投影 |
+| 轮次、上下文、模型 | `sessionStats` / `tokenUsage` / `modelSelection` |
+| 标题、目录、上次互动 | `session/list` 摘要块 |
+
+面板**只读当前会话**——你切到哪个会话，它讲哪个。不列别的会话，因此也不需要为冷会话取数。
 
 ## 安装
 
 ```powershell
-# 在 DSH 里
-plugin_manager install_bundle  H:\CodeProject\dsh-session-digest
+plugin_manager install_bundle  <这个目录的绝对路径>
 ```
 
-装完刷新页面，对话头部多一个「会话摘要」按钮，点它右栏打开。
+装完刷新页面：对话头部多一个「↩ 接上」按钮，点它右栏打开；空右栏也会直接显示它的入口。
+
+## 路由
+
+| 位置 | 槽位 | 说明 |
+|---|---|---|
+| 标签页类型 | `ctx.sidebarRightTabs.register` | id `dsh-catchup`，kind `catchup`，`keepMounted` |
+| 面板正文 | `sidebar.right.pane.tab`（key = id） | 全部 UI 在这里 |
+| 标签文字 | `sidebar.right.pane.tab.title` | 「接上」 |
+| 头部按钮 | `conversation.session.header.utilities` | order −8 |
+
+## 开发
+
+```powershell
+node test/logic.test.mjs
+```
+
+测试不需要浏览器：它把 `lib/client.js` 里 `// #region logic` 那段纯函数切出来跑，再检查中英词典覆盖、导出文件存在、槽位注册是否齐全、有没有偷偷混进模型调用或 RPC。
 
 ## 已知限制
 
-- **现状句是截断的**：`turnOutline` 的 response 上限 120 个 UTF-16 单位，且空白已折叠。它是一句"半句话"，不是完整总结。
+- **现状句是截断的**：`turnOutline` 的 response 上限 120 个 UTF-16 单位、空白已折叠，所以读起来是"半句话"，不是完整总结。
 - **`todos` 在空闲时是上一轮残留**（新一轮开始时清空），所以它只当兜底信号。
-- **待批准只能显示"有东西等你批准"**，命令内容取决于 `pendingInteraction` 能带出多少。
-- **右栏布局按会话各存一套**：切到没开过这个 tab 的会话，右栏是关着的（这是官方行为，与本插件无关）。
+- **待批准只能显示它自己带出来的文字**：`pendingInteraction` 没有公开的 payload 契约，插件是防御式取值的（`title`/`description`/`summary`/`label`/`reason`），取不到就只显示"有东西等你批准"。
+- **右栏布局按会话各存一套**：切到没开过这个 tab 的会话，右栏是关着的——这是 DSH 自己的行为，与本插件无关。
+- **`approvalState` 浏览器读不到**（host-only，没有 wire），所以"等你批准"只能从 `pendingInteraction` 拿。
 
-## 备选方案
+## 另一个没做的产品
 
-「跨会话总览看板」——解决"从一堆会话里挑一个切过去"的另一个产品。做过可行性验证但没实现，设计、代价和可复用代码都在 [`docs/ALTERNATIVES.md`](docs/ALTERNATIVES.md)。
+「跨会话总览看板」——解决"从一堆会话里挑一个切过去"。做过可行性验证但没实现，代价分析和可复用函数都记在 [`docs/ALTERNATIVES.md`](docs/ALTERNATIVES.md)。
+
+## 许可
+
+MIT

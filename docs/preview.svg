@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 420 330" width="420" height="330" role="img" aria-label="接上 panel layout">
+  <rect width="420" height="330" fill="#1b1d21"/>
+  <text x="16" y="24" fill="#e8e8e8" font-family="system-ui,sans-serif" font-size="13" font-weight="600">登录页限流</text>
+  <rect x="96" y="12" width="46" height="17" rx="5" fill="none" stroke="#f7b731" stroke-width="1"/>
+  <text x="104" y="24" fill="#f7b731" font-family="system-ui,sans-serif" font-size="10">待批准</text>
+
+  <rect x="16" y="38" width="388" height="86" rx="8" fill="rgba(247,183,49,0.07)" stroke="rgba(247,183,49,0.65)"/>
+  <text x="28" y="55" fill="#9a9a9a" font-family="system-ui,sans-serif" font-size="9" letter-spacing="1">需要你拍板</text>
+  <rect x="28" y="62" width="38" height="15" rx="4" fill="none" stroke="#f7b731" stroke-width="1"/>
+  <text x="33" y="73" fill="#f7b731" font-family="system-ui,sans-serif" font-size="9">待批准</text>
+  <text x="72" y="73" fill="#e8e8e8" font-family="system-ui,sans-serif" font-size="11">它想跑 pwsh 删掉临时目录，等你点头</text>
+  <text x="28" y="92" fill="#b9b9b9" font-family="system-ui,sans-serif" font-size="10">· A：按省份映射</text>
+  <text x="28" y="108" fill="#b9b9b9" font-family="system-ui,sans-serif" font-size="10">· B：按年份映射（推荐）</text>
+
+  <rect x="16" y="134" width="388" height="56" rx="8" fill="none" stroke="rgba(127,127,127,0.22)"/>
+  <text x="28" y="150" fill="#9a9a9a" font-family="system-ui,sans-serif" font-size="9" letter-spacing="1">现在停在哪</text>
+  <text x="28" y="168" fill="#e8e8e8" font-family="system-ui,sans-serif" font-size="11">令牌桶已经实现完了，测试挂在两个边界用例上还没过。</text>
+
+  <rect x="16" y="200" width="388" height="82" rx="8" fill="none" stroke="rgba(127,127,127,0.22)"/>
+  <text x="28" y="216" fill="#9a9a9a" font-family="system-ui,sans-serif" font-size="9" letter-spacing="1">最近几轮</text>
+  <text x="28" y="233" fill="#8f8f8f" font-family="system-ui,sans-serif" font-size="8">#10</text>
+  <text x="28" y="246" fill="#e8e8e8" font-family="system-ui,sans-serif" font-size="10">你：把限流加上，用令牌桶</text>
+  <text x="28" y="259" fill="#a8a8a8" font-family="system-ui,sans-serif" font-size="10">它：桶已经接进中间件，补了两个边界用例</text>
+  <text x="28" y="274" fill="#6f8fd8" font-family="system-ui,sans-serif" font-size="9" text-decoration="underline">再看 3 轮</text>
+
+  <text x="16" y="302" fill="#8a8a8a" font-family="system-ui,sans-serif" font-size="9">13 轮   上次动 12m   上下文 48k   LLM 96s   wb-proxy/deepseek-v4.1-flash</text>
+  <text x="16" y="318" fill="#8a8a8a" font-family="system-ui,sans-serif" font-size="9">目录 H:\CodeProject\login-gateway</text>
+</svg>
