@@ -1,0 +1,5 @@
+# Mounting the Host half is what makes the client half load.
+# The Host half is intentionally empty: this plugin has no server-side logic.
+- insert:
+    - id: dsh-session-digest
+      name: dsh-session-digest

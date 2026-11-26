@@ -1,0 +1,7 @@
+{
+  "meta": {
+    "title": "会话摘要",
+    "description": "右侧栏的会话简报：这个会话停在哪、有没有事等你拍板。零模型调用。",
+    "detail": "docs/DETAIL.md"
+  }
+}
