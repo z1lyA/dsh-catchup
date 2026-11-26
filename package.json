@@ -22,7 +22,7 @@
     "README.md"
   ],
   "scripts": {
-    "test": "node test/logic.test.mjs"
+    "test": "node test/logic.test.mjs && node test/render.test.mjs"
   },
   "dsh": {
     "bundle": { "patch": "./cordis.patch.yml" },

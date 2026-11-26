@@ -258,6 +258,16 @@ check('the bundled locale metadata matches the tab name', () => {
   assert.ok(source.includes("tab: '接上'"))
 })
 
+check('cordis.patch.yml is YAML, not JavaScript', () => {
+  const yaml = readFileSync(join(root, 'cordis.patch.yml'), 'utf8')
+  // `//` is a JS comment; YAML would read it as a scalar and choke on the next line.
+  const badComment = yaml.split(/\r?\n/).find((line) => /^\s*\/\//.test(line))
+  assert.equal(badComment, undefined, 'use # for YAML comments, found: ' + badComment)
+  assert.ok(/^- insert:/m.test(yaml), 'patch must start an insert list')
+  assert.ok(/^\s+- id: dsh-catchup$/m.test(yaml), 'patch must mount the package id')
+  assert.ok(/^\s+name: dsh-catchup$/m.test(yaml), 'patch must name the package')
+})
+
 console.log('')
 if (failures > 0) {
   console.log(failures + ' FAILED')

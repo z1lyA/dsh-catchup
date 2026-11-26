@@ -49,10 +49,15 @@ plugin_manager install_bundle  <这个目录的绝对路径>
 ## 开发
 
 ```powershell
-node test/logic.test.mjs
+npm test          # = node test/logic.test.mjs && node test/render.test.mjs
 ```
 
-测试不需要浏览器：它把 `lib/client.js` 里 `// #region logic` 那段纯函数切出来跑，再检查中英词典覆盖、导出文件存在、槽位注册是否齐全、有没有偷偷混进模型调用或 RPC。
+两个测试都不需要浏览器：
+
+- `test/logic.test.mjs` — 从 `lib/client.js` 的 `// #region logic` 切出纯函数单独跑，再查中英词典覆盖、导出文件存在、槽位注册齐全、有没有偷偷混进模型调用或 RPC、`cordis.patch.yml` 是不是合法 YAML。
+- `test/render.test.mjs` — 用假 `window.__ModuleLoader__` 真加载 `lib/client.js`，假 React 真渲染组件，检查「待批准 / 等你回答 / 没事等你 / 空会话 / 管线折叠 / 状态行」这几种情况下吐出来的字对不对。
+
+`plugin_manager install_bundle <目录>` 装的是**软链接**（`link:H:/...`），改完源码刷新页面就生效，不用重装。
 
 ## 已知限制
 
