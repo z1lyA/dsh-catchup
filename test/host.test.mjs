@@ -72,7 +72,7 @@ function makeCtx(sessions) {
           }
           yield {
             type: 'finish',
-            reason: { kind: 'stop' },
+            reason: { kind: state.finishKind || 'stop' },
             usage: { inputTokens: 3800, outputTokens: 120 },
           }
         })()
@@ -124,7 +124,7 @@ check('the model was asked with the session\'s own route, a system prompt and a 
   const options = state.calls[0]
   assert.equal(options.provider, 'wb-proxy')
   assert.equal(options.model, 'deepseek-v4.1-flash')
-  assert.equal(options.maxTokens, 400)
+  assert.equal(options.maxTokens, 1200, 'the cap leaves room for reasoning tokens')
   assert.equal(options.temperature, 0)
   assert.ok(typeof options.system === 'string' && options.system.length > 20)
   assert.equal(options.messages.length, 1)
@@ -194,6 +194,22 @@ await checkAsync('a provider error surfaces its message', async () => {
   const res = await call('http://x/api/session-digest?sessionId=s3')
   assert.equal(res.status, 500)
   assert.ok(res.raw.includes('provider exploded'), res.raw)
+})
+
+await checkAsync('hitting the token cap is only fatal when the answer did not survive it', async () => {
+  // A complete object that happened to end at the cap is usable; a cut-off one is not.
+  state.nextAnswer = '{"intro":"做并表","now":"跑完了，卡在映射。"}'
+  state.finishKind = 'max-tokens'
+  sessions.s4 = makeSession('s4', 11, [userMsg('看看'), botMsg('好')])
+  const ok = await call('http://x/api/session-digest?sessionId=s4')
+  assert.equal(ok.status, 200, ok.raw)
+  assert.equal(ok.body.now, '跑完了，卡在映射。')
+
+  state.nextAnswer = '{"intro":"做并表","now":"跑完'
+  sessions.s5 = makeSession('s5', 12, [userMsg('看看'), botMsg('好')])
+  const cut = await call('http://x/api/session-digest?sessionId=s5')
+  assert.equal(cut.status, 500)
+  assert.ok(cut.raw.includes('截断'), cut.raw)
 })
 
 console.log('')

@@ -5,8 +5,8 @@
     - id: dsh-catchup
       name: dsh-catchup
       config:
-        timeoutMs: 20000        # hard cap on the model call
-        maxOutputTokens: 400    # the answer is two short sentences
+        timeoutMs: 30000        # hard cap on the model call
+        maxOutputTokens: 1200   # reasoning tokens count too, so leave headroom
         maxMessages: 10         # how many recent messages feed the model
         maxInputBytes: 12000    # hard cut, oldest dropped first
         cooldownMs: 30000       # after a failure, wait before trying again

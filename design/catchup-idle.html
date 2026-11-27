@@ -58,15 +58,25 @@
 
   [data-slot="main"] .cu-head { display: flex; align-items: center; gap: 8px; min-width: 0; }
   [data-slot="main"] .cu-title {
-    font-size: 15px; font-weight: 600; letter-spacing: -0.01em;
+    font-size: 16px; font-weight: 650; letter-spacing: -0.012em;
     overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1 1 auto; min-width: 0;
   }
+  [data-slot="main"] .cu-dot {
+    flex: 0 0 auto; width: 7px; height: 7px; border-radius: 50%;
+    background: color-mix(in oklab, currentColor 40%, transparent);
+  }
+  [data-slot="main"] .cu-dot[data-kind="running"] { background: color-mix(in oklab, currentColor 85%, transparent); }
+  [data-slot="main"] .cu-dot[data-kind="approval"] { background: var(--cu-warn); }
   [data-slot="main"] .cu-chip {
     flex: 0 0 auto; font-size: 12px; line-height: 19px; padding: 0 7px;
     border: 1px solid currentColor; border-radius: 5px; white-space: nowrap;
   }
   [data-slot="main"] .cu-chip-warn { color: var(--cu-warn); }
-  [data-slot="main"] .cu-goal { margin: 0; font-size: 13px; line-height: 1.62; color: var(--cu-soft); }
+  [data-slot="main"] .cu-goal {
+    margin: 0; font-size: 13.5px; line-height: 1.65; color: var(--cu-soft);
+    border-left: 2px solid color-mix(in oklab, currentColor 20%, transparent);
+    padding-left: 10px;
+  }
 
   [data-slot="main"] .cu-item {
     margin: 0; font-size: 13.5px; line-height: 1.5;
@@ -80,7 +90,11 @@
   [data-slot="main"] .cu-tag-warn { color: var(--cu-warn); border-color: var(--cu-warn-line); }
 
   [data-slot="main"] .cu-now { margin: 0; font-size: 15px; line-height: 1.72; }
-  [data-slot="main"] .cu-facts { margin: auto 0 0; font-size: 12px; line-height: 1.6; color: var(--cu-mute); font-variant-numeric: tabular-nums; }
+  [data-slot="main"] .cu-facts {
+    margin: auto 0 0; padding-top: 9px; font-size: 12px; line-height: 1.6; color: var(--cu-mute);
+    border-top: 1px solid color-mix(in oklab, currentColor 12%, transparent);
+    font-variant-numeric: tabular-nums;
+  }
 
   [data-slot="main"] .cu-empty { padding: 40px 6px; text-align: center; color: var(--cu-soft); font-size: 13px; }
 </style>
