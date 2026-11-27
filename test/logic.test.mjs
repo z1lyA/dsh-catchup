@@ -32,9 +32,9 @@ function check(name, fn) {
 const region = source.match(/\/\/ #region logic([\s\S]*?)\/\/ #endregion logic/)
 assert.ok(region, 'lib/client.js must keep its // #region logic block')
 const api = new Function(
-  region[1] + '\nreturn { plain, firstSentence, relTime, fmtK, textOf, turnsOf, pendingItemsOf, goalOf, contextOf }',
+  region[1] + '\nreturn { plain, firstSentence, relTime, fmtK, textOf, turnsOf, pendingItemsOf, goalOf, contextOf, decodeDigest }',
 )()
-const { plain, firstSentence, relTime, fmtK, textOf, turnsOf, pendingItemsOf, goalOf, contextOf } = api
+const { plain, firstSentence, relTime, fmtK, textOf, turnsOf, pendingItemsOf, goalOf, contextOf, decodeDigest } = api
 
 console.log('\nlogic')
 
@@ -197,6 +197,27 @@ check('goalOf() stays empty when there is no goal — the title already says it'
   assert.equal(goalOf({ goal: { nope: 1 } }), '')
 })
 
+console.log('\nthe host\'s answer')
+
+check('decodeDigest() keeps the two sentences and the reported usage', () => {
+  const d = decodeDigest({ intro: '做并表', now: '跑完了，卡在映射。', usage: { input: 3800, output: 120 } })
+  assert.deepEqual(d, { intro: '做并表', now: '跑完了，卡在映射。', usage: { input: 3800, output: 120 } })
+})
+
+check('decodeDigest() rejects anything without a "now" sentence', () => {
+  assert.equal(decodeDigest(null), null)
+  assert.equal(decodeDigest(undefined), null)
+  assert.equal(decodeDigest({}), null)
+  assert.equal(decodeDigest({ now: '   ' }), null)
+  assert.equal(decodeDigest('nope'), null)
+})
+
+check('decodeDigest() treats a missing intro or usage as absent, not as an error', () => {
+  assert.deepEqual(decodeDigest({ now: 'ok' }), { intro: '', now: 'ok', usage: null })
+  assert.equal(decodeDigest({ now: 'ok', usage: { input: 0, output: 0 } }).usage, null)
+  assert.equal(decodeDigest({ now: 'ok', usage: 'junk' }).usage, null)
+})
+
 console.log('\ndictionaries')
 
 const dicts = {}
@@ -272,10 +293,13 @@ check('client services are injected', () => {
   assert.ok(/module\.exports\.inject = \[[^\]]*'sidebarRightTabs'/.test(source))
 })
 
-check('no model / RPC call sneaks in', () => {
-  for (const forbidden of ['fetch(', 'XMLHttpRequest', 'ctx.llm', 'session/projections', 'refreshProjections', 'remote.']) {
+check('the client never calls a model, and its only request is the digest route', () => {
+  for (const forbidden of ['ctx.llm', 'session/projections', 'refreshProjections', 'remote.', 'XMLHttpRequest']) {
     assert.equal(source.includes(forbidden), false, 'found ' + forbidden)
   }
+  const calls = [...source.matchAll(/\bfetch\(([^)]*)/g)].map((m) => m[1])
+  assert.equal(calls.length, 1, 'expected exactly one fetch, found ' + calls.length)
+  assert.ok(calls[0].includes('api/session-digest'), 'the one request must be the digest route: ' + calls[0])
 })
 
 check('the bundled locale metadata matches the tab name', () => {

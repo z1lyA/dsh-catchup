@@ -1,5 +1,12 @@
 # Mounting the Host half is what makes the client half load.
-# The Host half is intentionally empty: this plugin has no server-side logic.
+# The Host half writes the two sentences with one small model call; the panel
+# itself stays 0-token.
 - insert:
     - id: dsh-catchup
       name: dsh-catchup
+      config:
+        timeoutMs: 20000        # hard cap on the model call
+        maxOutputTokens: 400    # the answer is two short sentences
+        maxMessages: 10         # how many recent messages feed the model
+        maxInputBytes: 12000    # hard cut, oldest dropped first
+        cooldownMs: 30000       # after a failure, wait before trying again
