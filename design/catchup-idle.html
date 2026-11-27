@@ -23,16 +23,39 @@
     color: var(--dsh-fg);
   }
 
+  /* 三个固定区域铺满：这是什么会话 / 现在停在哪 / 还有什么悬着。
+     每个区域按内容权重分配高度，区域之间用一条细线分隔；没东西悬着时只用两格。 */
   [data-slot="main"] .cu {
+    height: 100%;
     box-sizing: border-box;
-    padding: 16px 18px 20px;
+    padding: 16px 18px 14px;
+    display: grid;
+    grid-template-rows: minmax(84px, 0.95fr) minmax(120px, 1.6fr) minmax(72px, 0.85fr);
+  }
+  [data-slot="main"] .cu[data-open="0"] { grid-template-rows: minmax(84px, 0.9fr) minmax(140px, 2fr); }
+
+  [data-slot="main"] .cu-block {
     display: flex;
     flex-direction: column;
-    gap: 28px;
+    justify-content: center;
+    gap: 8px;
+    padding: 14px 0 12px;
+    border-top: 1px solid color-mix(in oklab, currentColor 12%, transparent);
+    min-height: 0;
+    overflow: hidden;
+  }
+  [data-slot="main"] .cu-block:first-child { border-top: 0; padding-top: 0; justify-content: flex-start; }
+
+  /* 第三格：唯一有颜色的区域，颜色本身就是"停下来看这里" */
+  [data-slot="main"] .cu-open {
+    background: var(--cu-warn-tint);
+    border-top-color: var(--cu-warn-line);
+    border-radius: 0 0 10px 10px;
+    padding: 13px 12px 12px;
+    margin: 0 -6px -2px;
+    gap: 9px;
   }
 
-  /* 一：这是什么会话 */
-  [data-slot="main"] .cu-lead { display: flex; flex-direction: column; gap: 7px; }
   [data-slot="main"] .cu-head { display: flex; align-items: center; gap: 8px; min-width: 0; }
   [data-slot="main"] .cu-title {
     font-size: 15px; font-weight: 600; letter-spacing: -0.01em;
@@ -43,14 +66,8 @@
     border: 1px solid currentColor; border-radius: 5px; white-space: nowrap;
   }
   [data-slot="main"] .cu-chip-warn { color: var(--cu-warn); }
-  [data-slot="main"] .cu-goal { margin: 0; font-size: 13px; line-height: 1.6; color: var(--cu-soft); }
+  [data-slot="main"] .cu-goal { margin: 0; font-size: 13px; line-height: 1.62; color: var(--cu-soft); }
 
-  /* 二：悬而未决。唯一有颜色的块，每条一句 */
-  [data-slot="main"] .cu-hero {
-    border: 1px solid var(--cu-warn-line); border-left-width: 2px;
-    background: var(--cu-warn-tint); border-radius: 10px;
-    padding: 12px 14px; display: grid; gap: 9px;
-  }
   [data-slot="main"] .cu-item {
     margin: 0; font-size: 13.5px; line-height: 1.5;
     display: flex; gap: 8px; align-items: baseline;
@@ -61,13 +78,9 @@
     border-radius: 4px; color: var(--cu-soft); white-space: nowrap;
   }
   [data-slot="main"] .cu-tag-warn { color: var(--cu-warn); border-color: var(--cu-warn-line); }
-  [data-slot="main"] .cu-clear { display: flex; align-items: center; gap: 7px; font-size: 13px; color: var(--cu-soft); }
-  [data-slot="main"] .cu-clear svg { width: 15px; height: 15px; flex: 0 0 auto; opacity: 0.75; }
 
-  /* 三：走到哪了 */
-  [data-slot="main"] .cu-tail { display: flex; flex-direction: column; gap: 12px; }
   [data-slot="main"] .cu-now { margin: 0; font-size: 15px; line-height: 1.72; }
-  [data-slot="main"] .cu-facts { margin: 0; font-size: 12px; line-height: 1.6; color: var(--cu-mute); font-variant-numeric: tabular-nums; }
+  [data-slot="main"] .cu-facts { margin: auto 0 0; font-size: 12px; line-height: 1.6; color: var(--cu-mute); font-variant-numeric: tabular-nums; }
 
   [data-slot="main"] .cu-empty { padding: 40px 6px; text-align: center; color: var(--cu-soft); font-size: 13px; }
 </style>
@@ -108,18 +121,20 @@
     <div class="dsh-rtabs"><div class="dsh-rtab"><svg class="dsh-i" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 11l8-7 8 7v9H4z"/></svg>开始</div><div class="dsh-rtab on"><span data-slot="panel-title">接上</span></div></div>
     <div data-slot="main">
       <!-- 插件面板：点会话顶栏按钮后右侧栏显示的内容 -->
-      <div class="cu">
-        <header class="cu-lead">
+      <div class="cu" data-open="0">
+        <section class="cu-block">
           <div class="cu-head">
-            <div class="cu-title">整理会议记录</div>
+            <div class="cu-title">会话侧栏摘要插件开发</div>
           </div>
-        </header>
+          <p class="cu-goal">做一个 DSH 右侧栏插件：切回会话时一眼看清这摊事停在哪、有没有事等你拍板，且尽量不烧 token。</p>
+        </section>
 
-        <div class="cu-tail">
-          <p class="cu-now">31 省的并表已经跑完，台账补了 18 个共有字段。剩下 6 个有争议的字段卡在映射规则上：按省份归并稳，但会丢掉跨年的口径变化；按年份归并反之。</p>
-          <p class="cu-now">下一步等你定了映射再补这 6 个，补完就能出总表。这一轮没有阻塞，可以直接继续。</p>
-          <p class="cu-facts">14 轮 · 上次动 6m · 上下文 24.8M</p>
-        </div>
+        <section class="cu-block">
+          <p class="cu-now">面板已经能跑：右栏标签、头部按钮、三块内容都出来了，数据和用量都能读到。</p>
+          <p class="cu-now">还差的是一次真正跑通的摘要——今天第一次真跑，缓存目录都没生成，面板上标着「摘要没生成」，说明 Host 那次调用没成功，得先把它跑通才算数。</p>
+          <p class="cu-now">这一轮没有卡住你的东西，可以直接继续。</p>
+          <p class="cu-facts">19 轮 · 上次动 6m · 上下文 34.2M · 3.8k↑ / 120↓</p>
+        </section>
       </div>
     </div>
   </aside>
