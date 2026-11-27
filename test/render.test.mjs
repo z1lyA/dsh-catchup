@@ -29,24 +29,17 @@ function check(name, fn) {
 
 // ------------------------------------------------------------ a tiny React
 
-let hookCursor = 0
 const React = {
   createElement(type, props, ...children) {
     const all = children.length === 1 && Array.isArray(children[0]) ? children[0] : children
     const node = { type, props: props || {}, children: all }
-    if (typeof type === 'function') {
-      hookCursor = 0
-      return type({ ...(props || {}), children: all })
-    }
+    if (typeof type === 'function') return type({ ...(props || {}), children: all })
     return node
   },
   useState(initial) {
-    hookCursor += 1
     return [initial, () => {}]
   },
-  useEffect() {
-    hookCursor += 1
-  },
+  useEffect() {},
 }
 
 /** Flatten a rendered tree into readable text, dropping styles/handlers. */
@@ -99,13 +92,8 @@ const ctx = {
       return component
     },
   },
-  sidebarRightTabs: {
-    register: (definition) => { registered.type = definition; return () => {} },
-  },
-  sidebarRight: {
-    mounted: { getSnapshot: () => 's1' },
-    openTab: (kind) => { registered.openedKind = kind },
-  },
+  sidebarRightTabs: { register: (definition) => { registered.type = definition; return () => {} } },
+  sidebarRight: { mounted: { getSnapshot: () => 's1' }, openTab: () => {} },
 }
 
 const realWarn = console.warn
@@ -128,7 +116,6 @@ check('tab type is well formed', () => {
   assert.equal(registered.type.kind, 'catchup')
   assert.equal(registered.type.title(), '接上')
   assert.equal(registered.type.keepMounted, true)
-  assert.equal(registered.type.guide.length, 1)
   assert.equal(registered.type.guide[0].description(), '切过来之后，先看一眼这摊事停在哪')
 })
 
@@ -141,9 +128,8 @@ check('injected services are declared', () => {
 function props(overrides) {
   const sid = 's1'
   const list = overrides.list
-  const status = overrides.status
   // DSH hands the body a ReadonlyMap<SessionId, SessionStatus>, not a plain object.
-  const statusMap = status === undefined ? undefined : new Map([[sid, status]])
+  const statusMap = overrides.status === undefined ? undefined : new Map([[sid, overrides.status]])
   return {
     sessionId: sid,
     t: (key) => localeDict.catchup[key] || key,
@@ -170,12 +156,7 @@ function session(extra) {
 }
 
 function listOf(summary, values) {
-  return {
-    ids: ['s1'],
-    byId: { s1: summary },
-    phase: 'ready',
-    projectionsBySession: { s1: { values: values || {}, state: 'ready' } },
-  }
+  return { ids: ['s1'], byId: { s1: summary }, phase: 'ready', projectionsBySession: { s1: { values: values || {}, state: 'ready' } } }
 }
 
 const turn = (n, prompt, response) => ({ turn: n, seq: n * 10, prompt, response })
@@ -192,7 +173,7 @@ const turns = [
   turn(9, '现在什么状态', '全部改完，12 个测试全过，等你决定要不要写进 README。'),
 ]
 
-console.log('\nrender — a session with an approval waiting')
+console.log('\nrender — three blocks, in that order')
 
 const approvalText = toText(registered.body(props({
   list: listOf(session({}), {
@@ -205,72 +186,83 @@ const approvalText = toText(registered.body(props({
   status: { running: false, pendingInteraction: { kind: 'approval', title: 'pwsh 删除临时目录' }, completionUnread: false },
 })))
 
-check('shows the title and the approval badge', () => {
+check('1 — what this session is: the title and the status chip', () => {
   assert.ok(approvalText.includes('登录页限流'), approvalText.slice(0, 120))
   assert.ok(approvalText.includes('待批准'), approvalText.slice(0, 120))
 })
 
-check('shows the approval detail', () => {
-  assert.ok(approvalText.includes('pwsh 删除临时目录'), approvalText)
-})
-
-check('introduces the session from how it began', () => {
-  assert.ok(approvalText.includes('把限流加上，用令牌桶'), approvalText)
-  assert.ok(approvalText.includes('——'), 'the opening request and reply are joined: ' + approvalText)
-  assert.equal(approvalText.split('把限流加上，用令牌桶').length - 1, 1, 'the opening line must appear once, not in the list too')
-})
-
-check('says where it stands in its own last words', () => {
+check('2 — where it stands: the last turn, in its own words', () => {
   assert.ok(approvalText.includes('全部改完'), approvalText)
 })
 
-check('the list holds what led here, not the last turn', () => {
-  assert.ok(approvalText.includes('配置项从哪读'), 'turn 5 is within the last six: ' + approvalText)
-  assert.equal(approvalText.includes('补那两个用例'), false, 'turn 2 must be folded away')
-  assert.ok(approvalText.includes('再看 2 轮'), approvalText)
+check('2 — and three facts, one muted line', () => {
+  for (const fact of ['9 轮', '上次动 12m', '上下文 48k']) {
+    assert.ok(approvalText.includes(fact), 'missing "' + fact + '" in: ' + approvalText)
+  }
+  assert.ok(approvalText.includes(' · '), 'facts must be joined by a middle dot: ' + approvalText)
 })
 
-check('shows the machine facts line', () => {
-  for (const fact of ['9 轮', '上次动 12m', '48k', 'LLM 96s', 'wb-proxy/deepseek-v4.1-flash', 'login-gateway']) {
-    assert.ok(approvalText.includes(fact), 'missing fact "' + fact + '" in: ' + approvalText)
+check('3 — what is still open, one condensed line with its tag', () => {
+  assert.ok(approvalText.includes('批准'), approvalText)
+  assert.ok(approvalText.includes('pwsh 删除临时目录'), approvalText)
+})
+
+check('the three blocks come in the order 介绍 → 现状 → 待拍板', () => {
+  const title = approvalText.indexOf('登录页限流')
+  const now = approvalText.indexOf('全部改完')
+  const open = approvalText.indexOf('pwsh 删除临时目录')
+  assert.ok(title > -1 && now > -1 && open > -1, approvalText)
+  assert.ok(title < now, 'the title must come before the state line')
+  assert.ok(now < open, 'the state line must come before what is open')
+})
+
+check('no conversation history: no first prompt, no per-turn lines', () => {
+  for (const absent of ['把限流加上，用令牌桶', '配置项从哪读', '那 README 呢', '再看']) {
+    assert.equal(approvalText.includes(absent), false, 'must not render "' + absent + '": ' + approvalText)
   }
+})
+
+check('no model or path noise leaks in', () => {
+  assert.equal(approvalText.includes('deepseek-v4.1-flash'), false, approvalText)
+  assert.equal(approvalText.includes('login-gateway'), false, approvalText)
 })
 
 console.log('\nrender — nothing waiting')
 
 const idleText = toText(registered.body(props({
-  list: listOf(session({}), { turnOutline: turns.slice(0, 2) }),
+  list: listOf(session({}), { turnOutline: turns }),
   status: { running: false, pendingInteraction: undefined, completionUnread: false },
 })))
 
-check('says nothing is waiting', () => {
-  assert.ok(idleText.includes('没事等你'), idleText)
+check('says nothing is waiting, and says it last', () => {
+  const clear = idleText.indexOf('没事等你')
+  assert.ok(clear > -1, idleText)
+  assert.ok(clear > idleText.indexOf('全部改完'), 'the empty state closes the panel instead of splitting it')
 })
 
-check('does not render an approval badge when nothing waits', () => {
-  assert.equal(idleText.includes('待批准'), false)
+check('does not claim there is nothing while a todo is open', () => {
+  const text = toText(registered.body(props({
+    list: listOf(session({}), { turnOutline: turns, todos: [{ content: '补台账', status: 'pending' }] }),
+    status: { running: false, pendingInteraction: undefined, completionUnread: false },
+  })))
+  assert.equal(text.includes('没事等你'), false, text)
+  assert.ok(text.includes('补台账'), text)
+  assert.ok(text.includes('待办'), text)
 })
 
-console.log('\nrender — an agent question with options')
+console.log('\nrender — a goal makes the first block richer')
 
-const questionText = toText(registered.body(props({
-  list: listOf(session({}), {
-    turnOutline: turns.slice(0, 3),
-    userQuestions: {
-      active: [{ callId: 'c1', questions: [{ question: '字段映射按哪个来？', options: [{ label: '按省份' }, { label: '按年份' }] }], state: 'open' }],
-      settled: [],
-    },
-  }),
+const goalText = toText(registered.body(props({
+  list: listOf(session({}), { turnOutline: turns, goal: { text: '把登录接口的限流补上并压测' } }),
   status: { running: false, pendingInteraction: undefined, completionUnread: false },
 })))
 
-check('renders the question and its options', () => {
-  assert.ok(questionText.includes('字段映射按哪个来？'), questionText)
-  assert.ok(questionText.includes('按省份'), questionText)
-  assert.ok(questionText.includes('按年份'), questionText)
+check('shows the declared goal under the title', () => {
+  assert.ok(goalText.includes('把登录接口的限流补上并压测'), goalText)
+  assert.ok(goalText.indexOf('把登录接口的限流补上并压测') > goalText.indexOf('登录页限流'), goalText)
 })
 
-console.log('\nrender — an empty session')
+console.log('\nrender — an empty and a fresh session')
 
 const blankText = toText(registered.body(props({
   list: listOf(session({ blank: true }), {}),
@@ -281,16 +273,21 @@ check('says the session is empty', () => {
   assert.ok(blankText.includes('这个会话还是空的'), blankText)
 })
 
-console.log('\nrender — a running session with no completed turn yet')
-
-let runningText = ''
-check('renders without throwing and says there is nothing to catch up on', () => {
-  runningText = toText(registered.body(props({
+check('a running session with no completed turn renders without throwing', () => {
+  const text = toText(registered.body(props({
     list: listOf(session({}), { turnOutline: [] }),
     status: { running: true, pendingInteraction: undefined, completionUnread: false },
   })))
-  assert.ok(runningText.includes('运行中'), runningText)
-  assert.ok(runningText.includes('还没有跑完一轮'), runningText)
+  assert.ok(text.includes('运行中'), text)
+  assert.ok(text.includes('还没有跑完一轮'), text)
+})
+
+check('a missing status map is not an error', () => {
+  const text = toText(registered.body(props({
+    list: listOf(session({}), { turnOutline: [] }),
+    status: undefined,
+  })))
+  assert.ok(typeof text === 'string')
 })
 
 console.log('\nrender — label and header button')

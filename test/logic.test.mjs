@@ -32,9 +32,9 @@ function check(name, fn) {
 const region = source.match(/\/\/ #region logic([\s\S]*?)\/\/ #endregion logic/)
 assert.ok(region, 'lib/client.js must keep its // #region logic block')
 const api = new Function(
-  region[1] + '\nreturn { plain, firstSentence, relTime, fmtK, textOf, pendingOf, contextOf, modelLabel, turnsOf, introOf }',
+  region[1] + '\nreturn { plain, firstSentence, relTime, fmtK, textOf, turnsOf, pendingItemsOf, goalOf, contextOf }',
 )()
-const { plain, firstSentence, relTime, fmtK, textOf, pendingOf, contextOf, modelLabel, turnsOf, introOf } = api
+const { plain, firstSentence, relTime, fmtK, textOf, turnsOf, pendingItemsOf, goalOf, contextOf } = api
 
 console.log('\nlogic')
 
@@ -62,13 +62,11 @@ check('firstSentence() cuts at a CJK full stop', () => {
 })
 
 check('firstSentence() cuts at a Latin question mark', () => {
-  const s = firstSentence('Should I proceed with option B? The rest is detail that nobody reads.')
-  assert.equal(s, 'Should I proceed with option B?')
+  assert.equal(firstSentence('Should I proceed with option B? The rest is detail that nobody reads.'), 'Should I proceed with option B?')
 })
 
 check('firstSentence() hard-caps and marks the cut with an ellipsis', () => {
-  const long = '这是一个没有任何标点符号的很长的句子'.repeat(12)
-  const s = firstSentence(long, 40)
+  const s = firstSentence('这是一个没有任何标点符号的很长的句子'.repeat(12), 40)
   assert.ok(s.length <= 41, 'length ' + s.length)
   assert.ok(s.endsWith('…'), s)
 })
@@ -107,97 +105,96 @@ check('contextOf() sums the four token buckets', () => {
   assert.equal(contextOf(null), 0)
 })
 
-check('modelLabel() joins provider and model, tolerates absence', () => {
-  assert.equal(modelLabel({ provider: 'wb-proxy', model: 'deepseek-v4.1-flash' }), 'wb-proxy/deepseek-v4.1-flash')
-  assert.equal(modelLabel({ model: 'x' }), 'x')
-  assert.equal(modelLabel(undefined), '')
+check('textOf() digs a string out of whatever shape the host hands over', () => {
+  assert.equal(textOf('plain'), 'plain')
+  assert.equal(textOf({ title: 'a' }), 'a')
+  assert.equal(textOf({ description: 'b' }), 'b')
+  assert.equal(textOf({ label: 'c' }), 'c')
+  assert.equal(textOf({ reason: 'd' }), 'd')
+  assert.equal(textOf({ command: 'e' }), 'e')
+  assert.equal(textOf({ nope: 1 }), '')
+  assert.equal(textOf(undefined), '')
 })
-
-console.log('\nprecedence of "what is waiting on you"')
-
-check('approval outranks everything', () => {
-  const p = pendingOf(
-    { pendingInteraction: { kind: 'approval', title: 'pwsh 删除临时目录' } },
-    { userQuestions: { active: [{ questions: [{ question: 'A 还是 B？' }] }] }, todos: [{ content: 'x', status: 'pending' }] },
-  )
-  assert.equal(p.rank, 1)
-  assert.equal(p.label, 'approval')
-  assert.ok(p.detail.includes('pwsh'))
-})
-
-check('an unknown pendingInteraction kind is still rank 1, labelled as a question', () => {
-  const p = pendingOf({ pendingInteraction: { type: 'mystery', label: 'something' } }, {})
-  assert.equal(p.rank, 1)
-  assert.equal(p.label, 'awaiting')
-  assert.equal(p.detail, 'something')
-})
-
-check('agent question outranks todos and carries its options', () => {
-  const p = pendingOf(
-    {},
-    {
-      userQuestions: { active: [{ questions: [{ question: '字段映射选哪个？', options: [{ label: 'A' }, 'B', { text: 'C' }] }] }] },
-      todos: [{ content: '收尾', status: 'in_progress' }],
-    },
-  )
-  assert.equal(p.rank, 2)
-  assert.equal(p.detail, '字段映射选哪个？')
-  assert.deepEqual(p.options, ['A', 'B', 'C'])
-})
-
-check('unfinished todos are the fallback, and count them', () => {
-  const p = pendingOf({}, { todos: [{ content: '补台账', status: 'pending' }, { content: '已做', status: 'completed' }] })
-  assert.equal(p.rank, 3)
-  assert.equal(p.detail, '补台账')
-  assert.equal(p.count, 1)
-})
-
-check('a session whose todos are all completed reads as "nothing waiting"', () => {
-  assert.equal(pendingOf({}, { todos: [{ content: 'a', status: 'completed' }] }), null)
-})
-
-check('everything absent reads as "nothing waiting"', () => {
-  assert.equal(pendingOf(undefined, {}), null)
-  assert.equal(pendingOf({ running: true }, {}), null)
-})
-
-check('settled questions do not count as pending', () => {
-  assert.equal(pendingOf({}, { userQuestions: { active: [], settled: [{ answers: [] }] } }), null)
-})
-
-console.log('\nwhat this session is about')
-
-const pair = (n, prompt, response) => ({ turn: n, seq: n * 10, prompt, response })
 
 check('turnsOf() reads the wire value, which is the array itself', () => {
-  const turns = [pair(1, 'a', 'b')]
+  const turns = [{ turn: 1, seq: 10, prompt: 'a', response: 'b' }]
   assert.equal(turnsOf(turns), turns)
 })
 
 check('turnsOf() tolerates a { turns } wrapper and junk', () => {
-  const turns = [pair(1, 'a', 'b')]
+  const turns = [{ turn: 1, seq: 10, prompt: 'a', response: 'b' }]
   assert.equal(turnsOf({ turns }), turns)
   assert.deepEqual(turnsOf(undefined), [])
   assert.deepEqual(turnsOf({}), [])
 })
 
-check('introOf() prefers the declared goal', () => {
-  const intro = introOf([pair(1, '把表并了', '并发好了。')], { goal: { text: '把 31 省的政策表并成一张总表' } })
-  assert.equal(intro, '把 31 省的政策表并成一张总表')
+console.log('\nwhat is still open')
+
+check('an approval comes first and is tagged as an approval', () => {
+  const items = pendingItemsOf(
+    { pendingInteraction: { kind: 'approval', title: 'pwsh 删除临时目录' } },
+    { userQuestions: { active: [{ questions: [{ question: 'A 还是 B？' }] }] }, todos: [{ content: 'x', status: 'pending' }] },
+  )
+  assert.equal(items[0].kind, 'approval')
+  assert.ok(items[0].text.includes('pwsh'))
 })
 
-check('introOf() otherwise says how the session began, request and reply', () => {
-  const intro = introOf([pair(1, '把这两份日志归档。', '归档好了，一共 6 份。'), pair(2, 'x', 'y')], {})
-  assert.equal(intro, '把这两份日志归档 —— 归档好了，一共 6 份。')
+check('an unknown pendingInteraction kind is still first, tagged as a question', () => {
+  const items = pendingItemsOf({ pendingInteraction: { type: 'mystery', label: 'something' } }, {})
+  assert.equal(items[0].kind, 'ask')
+  assert.equal(items[0].text, 'something')
 })
 
-check('introOf() stays silent for a single-turn session, where it would repeat the same line', () => {
-  assert.equal(introOf([pair(1, '把这两份日志归档。', '归档好了。')], {}), '')
+check('questions the agent asked come next, one line each', () => {
+  const items = pendingItemsOf({}, {
+    userQuestions: { active: [{ questions: [{ question: '字段映射选哪个？' }] }, { questions: [{ question: '要不要写进 README？' }] }] },
+  })
+  assert.deepEqual(items.map((i) => i.text), ['字段映射选哪个？', '要不要写进 README？'])
+  assert.ok(items.every((i) => i.kind === 'ask'))
 })
 
-check('introOf() never returns undefined', () => {
-  assert.equal(introOf([], {}), '')
-  assert.equal(introOf(undefined, undefined), '')
+check('unfinished todos are last, one line each', () => {
+  const items = pendingItemsOf({}, { todos: [{ content: '补台账', status: 'pending' }, { content: '已做', status: 'completed' }] })
+  assert.deepEqual(items, [{ kind: 'todo', text: '补台账' }])
+})
+
+check('a session whose todos are all completed reads as nothing waiting', () => {
+  assert.deepEqual(pendingItemsOf({}, { todos: [{ content: 'a', status: 'completed' }] }), [])
+})
+
+check('no pending interaction, no questions, no todos reads as nothing waiting', () => {
+  assert.deepEqual(pendingItemsOf(undefined, {}), [])
+  assert.deepEqual(pendingItemsOf({ running: true }, {}), [])
+})
+
+check('settled questions do not count as pending', () => {
+  assert.deepEqual(pendingItemsOf({}, { userQuestions: { active: [], settled: [{ answers: [] }] } }), [])
+})
+
+check('the block stays a glance: at most four items', () => {
+  const todos = Array.from({ length: 7 }, (_, i) => ({ content: 'todo ' + i, status: 'pending' }))
+  const items = pendingItemsOf({}, { todos })
+  assert.equal(items.length, 4)
+  assert.equal(items[3].text, 'todo 3')
+})
+
+check('an item with no text is kept when it is the pending interaction itself', () => {
+  const items = pendingItemsOf({ pendingInteraction: { kind: 'approval' } }, {})
+  assert.equal(items.length, 1)
+  assert.equal(items[0].kind, 'approval')
+  assert.equal(items[0].text, '')
+})
+
+console.log('\nwhat this session is')
+
+check('goalOf() uses the declared goal', () => {
+  assert.equal(goalOf({ goal: { text: '把 31 省的政策表并成一张总表' } }), '把 31 省的政策表并成一张总表')
+})
+
+check('goalOf() stays empty when there is no goal — the title already says it', () => {
+  assert.equal(goalOf({}), '')
+  assert.equal(goalOf(undefined), '')
+  assert.equal(goalOf({ goal: { nope: 1 } }), '')
 })
 
 console.log('\ndictionaries')
@@ -223,11 +220,6 @@ check('every t() key used in the code exists in both dictionaries', () => {
   const missingEn = [...used].filter((k) => !dicts.EN.has(k))
   assert.deepEqual(missingZh, [], 'missing in ZH: ' + missingZh.join(', '))
   assert.deepEqual(missingEn, [], 'missing in EN: ' + missingEn.join(', '))
-})
-
-check('placeholder substitution key exists', () => {
-  assert.ok(dicts.ZH.has('more'))
-  assert.ok(String(source).includes("replace('%n'"))
 })
 
 console.log('\nwiring')
@@ -326,10 +318,7 @@ check('the stylesheet is prefix-scoped, not global', () => {
     if (!chunk.includes('{')) continue
     const selector = chunk.split('{')[0].trim()
     if (selector === '') continue
-    assert.ok(
-      selector.startsWith('.dsh-catchup'),
-      'unscoped rule would leak into the host UI: ' + selector.slice(0, 60),
-    )
+    assert.ok(selector.startsWith('.dsh-catchup'), 'unscoped rule would leak into the host UI: ' + selector.slice(0, 60))
   }
 })
 
