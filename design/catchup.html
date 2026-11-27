@@ -10,24 +10,32 @@
 <style>
   /* ── 接上：右侧栏面板 ───────────────────────────────────────── */
   [data-slot="main"] {
-    /* 用 currentColor 混出来的灰和琥珀：深浅色自动跟着走，不依赖 data-theme 是否存在。
+    /* 灰阶和琥珀都从 currentColor 混出来：深浅色自动跟着走，不依赖 data-theme 是否存在。
        DSH 自己的 --dsh-muted 在白底只有 3.7:1，这里要 ≥ 4.5:1。 */
-    --cu-soft: color-mix(in oklab, currentColor 70%, transparent);
-    --cu-mute: color-mix(in oklab, currentColor 62%, transparent);
+    --cu-soft: color-mix(in oklab, currentColor 68%, transparent);
+    --cu-mute: color-mix(in oklab, currentColor 60%, transparent);
     --cu-warn: color-mix(in oklab, #a86c08 80%, currentColor);
     --cu-warn-tint: color-mix(in oklab, #c98a1b 10%, transparent);
     --cu-warn-line: color-mix(in oklab, #c98a1b 60%, transparent);
-    display: flex;
-    flex-direction: column;
     height: 100%;
     overflow-y: auto;
     font-family: var(--dsh-font);
     color: var(--dsh-fg);
   }
 
-  [data-slot="main"] .cu { padding: 16px 18px 28px; display: grid; gap: 18px; }
+  /* 三块平均铺满高度：这是谁的会话 → 等你拍板 → 现在停在哪。
+     多余的空白平均分到块与块之间，不用间距硬填。 */
+  [data-slot="main"] .cu {
+    min-height: 100%;
+    box-sizing: border-box;
+    padding: 16px 18px 20px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    gap: 20px;
+  }
+  [data-slot="main"] .cu-lead { display: flex; flex-direction: column; gap: 16px; }
 
-  /* 头部：会话名 + 状态 */
   [data-slot="main"] .cu-head { display: flex; align-items: center; gap: 8px; min-width: 0; }
   [data-slot="main"] .cu-title {
     font-size: 14px; font-weight: 600; letter-spacing: -0.01em;
@@ -38,48 +46,31 @@
     border: 1px solid currentColor; border-radius: 5px; white-space: nowrap;
   }
   [data-slot="main"] .cu-chip-warn { color: var(--cu-warn); }
-  [data-slot="main"] .cu-chip-run { color: var(--dsh-accent); }
 
-  /* 小节标题 */
-  [data-slot="main"] .cu-kicker {
-    font-size: 12px; letter-spacing: 0.06em; color: var(--cu-soft); margin-bottom: 6px;
-  }
+  /* 这是什么会话：比正文弱一档，它是背景不是重点 */
+  [data-slot="main"] .cu-intro { margin: 0; font-size: 13.5px; line-height: 1.7; color: var(--cu-soft); }
 
-  /* 需要你拍板：唯一有颜色的块 */
+  /* 等你拍板：唯一有颜色的块，颜色本身就是"停下来看这里" */
   [data-slot="main"] .cu-hero {
     border: 1px solid var(--cu-warn-line); border-left-width: 2px;
-    background: var(--cu-warn-tint); border-radius: 10px; padding: 12px 14px 13px;
+    background: var(--cu-warn-tint); border-radius: 10px; padding: 13px 14px;
   }
-  [data-slot="main"] .cu-hero .cu-kicker { color: var(--cu-warn); }
   [data-slot="main"] .cu-ask { margin: 0; font-size: 13.5px; line-height: 1.6; }
-  [data-slot="main"] .cu-opts { list-style: none; margin: 9px 0 0; padding: 0; display: grid; gap: 6px; }
-  [data-slot="main"] .cu-opts li {
-    display: flex; gap: 8px; align-items: baseline;
-    font-size: 13px; line-height: 1.5; color: var(--dsh-fg); opacity: 0.9;
-  }
+  [data-slot="main"] .cu-opts { list-style: none; margin: 10px 0 0; padding: 0; display: grid; gap: 6px; }
+  [data-slot="main"] .cu-opts li { display: flex; gap: 8px; align-items: baseline; font-size: 13px; line-height: 1.5; }
   [data-slot="main"] .cu-key {
     flex: 0 0 auto; width: 19px; height: 19px; border-radius: 4px;
-    border: 1px solid var(--dsh-line); font-size: 12px; line-height: 17px;
-    text-align: center; color: var(--cu-soft);
+    border: 1px solid color-mix(in oklab, currentColor 25%, transparent);
+    font-size: 12px; line-height: 17px; text-align: center; color: var(--cu-soft);
   }
 
-  /* 没事等你：安静的一行 */
-  [data-slot="main"] .cu-clear {
-    display: flex; align-items: center; gap: 7px;
-    font-size: 13px; color: var(--cu-soft);
-  }
-  [data-slot="main"] .cu-clear svg { width: 15px; height: 15px; flex: 0 0 auto; opacity: 0.7; }
+  [data-slot="main"] .cu-clear { display: flex; align-items: center; gap: 7px; font-size: 13px; color: var(--cu-soft); }
+  [data-slot="main"] .cu-clear svg { width: 15px; height: 15px; flex: 0 0 auto; opacity: 0.75; }
 
-  /* 现在停在哪 */
-  [data-slot="main"] .cu-now { margin: 0; font-size: 14px; line-height: 1.68; }
-
-  /* 最近几轮：左侧一条细轨 */
-  [data-slot="main"] .cu-turns { list-style: none; margin: 0; padding: 0 0 0 2px; display: grid; gap: 12px; }
-  [data-slot="main"] .cu-turn { display: grid; grid-template-columns: 22px 1fr; gap: 8px; }
-  [data-slot="main"] .cu-idx {
-    font-size: 12px; color: var(--cu-mute);
-    font-variant-numeric: tabular-nums; padding-top: 2px; text-align: right;
-  }
+  /* 现在停在哪：正文里最大的一档，紧贴它自己的几轮 */
+  [data-slot="main"] .cu-tail { display: flex; flex-direction: column; gap: 16px; }
+  [data-slot="main"] .cu-now { margin: 0; font-size: 15px; line-height: 1.65; }
+  [data-slot="main"] .cu-turns { list-style: none; margin: 0; padding: 0; display: grid; gap: 14px; }
   [data-slot="main"] .cu-you {
     margin: 0; font-size: 13px; line-height: 1.5; font-weight: 500;
     display: -webkit-box; -webkit-line-clamp: 1; -webkit-box-orient: vertical; overflow: hidden;
@@ -89,21 +80,20 @@
     display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
   }
   [data-slot="main"] .cu-more {
-    margin-top: 6px; padding: 5px 2px; min-height: 28px; border: 0; background: none; cursor: pointer;
-    font: inherit; font-size: 12.5px; color: var(--cu-soft); text-decoration: underline;
-    text-underline-offset: 3px;
+    align-self: flex-start; margin-top: 2px; padding: 5px 2px; min-height: 28px;
+    border: 0; background: none; cursor: pointer; font: inherit; font-size: 12.5px;
+    color: var(--cu-soft); text-decoration: underline; text-underline-offset: 3px;
   }
-  [data-slot="main"] .cu-more:hover { color: var(--dsh-fg); }
+  [data-slot="main"] .cu-more:hover { color: inherit; }
 
-  /* 底部机器事实 */
+  /* 事实行，这三块之外的脚注 */
   [data-slot="main"] .cu-facts {
     display: flex; flex-wrap: wrap; gap: 3px 10px;
     font-size: 12px; color: var(--cu-mute); font-variant-numeric: tabular-nums;
-    border-top: 1px solid var(--dsh-line); padding-top: 12px; margin-top: 2px;
+    border-top: 1px solid color-mix(in oklab, currentColor 14%, transparent); padding-top: 12px;
   }
   [data-slot="main"] .cu-cwd { flex: 1 1 100%; word-break: break-all; }
 
-  /* 空会话 */
   [data-slot="main"] .cu-empty { padding: 40px 6px; text-align: center; color: var(--cu-soft); font-size: 13px; }
 </style>
 </head>
@@ -144,13 +134,15 @@
     <div data-slot="main">
       <!-- 插件面板：点会话顶栏按钮后右侧栏显示的内容 -->
       <div class="cu">
-        <div class="cu-head">
-          <div class="cu-title">整理会议记录</div>
-          <span class="cu-chip cu-chip-warn">待批准</span>
+        <div class="cu-lead">
+          <div class="cu-head">
+            <div class="cu-title">整理会议记录</div>
+            <span class="cu-chip cu-chip-warn">待批准</span>
+          </div>
+          <p class="cu-intro">整理这周的会议记录成一页 —— 读完记录后按议题归类，结果放进了「会议纪要.md」。</p>
         </div>
 
         <section class="cu-hero">
-          <div class="cu-kicker">需要你拍板</div>
           <p class="cu-ask">它想用 pwsh 删掉 <b>%TEMP%\gi_reorg</b> 这两个临时目录，等你点头。</p>
           <ul class="cu-opts">
             <li><span class="cu-key">A</span>只删这两个目录，别动别的</li>
@@ -158,29 +150,25 @@
           </ul>
         </section>
 
-        <section>
-          <div class="cu-kicker">现在停在哪</div>
+        <div class="cu-tail">
           <p class="cu-now">31 省的并表已经跑完，台账字段补了一半，卡在字段映射还没定。</p>
-        </section>
-
-        <section>
-          <div class="cu-kicker">最近几轮</div>
           <ol class="cu-turns">
-            <li class="cu-turn"><span class="cu-idx">12</span><div><p class="cu-you">把这两份移动日志归档</p><p class="cu-it">归档好了，一共 6 份日志，都放进 99_归档\政策\备份\ 了。</p></div></li>
-            <li class="cu-turn"><span class="cu-idx">13</span><div><p class="cu-you">台账那块还差什么</p><p class="cu-it">差字段映射，31 省的表格列名不一致，得先定按省份还是按年份归并。</p></div></li>
-            <li class="cu-turn"><span class="cu-idx">14</span><div><p class="cu-you">你倾向哪个</p><p class="cu-it">按年份更稳，因为同一省份跨年会变口径；不过这会丢掉省级横向对比。</p></div></li>
+            <li><p class="cu-you">先把有争议的字段挑出来</p><p class="cu-it">挑出 6 个有争议的，民政、卫健、人社各两个，其余 25 省可以直接并。</p></li>
+            <li><p class="cu-you">并表跑一遍看看</p><p class="cu-it">跑完了，31 省全部并上，共 4,578 件、21,030 次命中，没有省份缺失。</p></li>
+            <li><p class="cu-you">台账那块还差什么</p><p class="cu-it">差字段映射，31 省的表格列名不一致，得先定按省份还是按年份归并。</p></li>
+            <li><p class="cu-you">你倾向哪个</p><p class="cu-it">按年份更稳，因为同一省份跨年会变口径；不过这会丢掉省级横向对比。</p></li>
+            <li><p class="cu-you">那先把没争议的字段补上</p><p class="cu-it">补了 18 个共有字段，剩下 6 个要等映射定下来，改动都在台账表里。</p></li>
           </ol>
-          <button class="cu-more" type="button">再看 11 轮</button>
-        </section>
-
-        <footer class="cu-facts">
-          <span>14 轮</span>
-          <span>上次动 12m</span>
-          <span>上下文 48k</span>
-          <span>LLM 96s</span>
-          <span>deepseek-v4.1-flash</span>
-          <span class="cu-cwd">H:\CodeProject\dept-ledger</span>
-        </footer>
+          <button class="cu-more" type="button">再看 9 轮</button>
+          <footer class="cu-facts">
+            <span>14 轮</span>
+            <span>上次动 12m</span>
+            <span>上下文 48k</span>
+            <span>LLM 96s</span>
+            <span>deepseek-v4.1-flash</span>
+            <span class="cu-cwd">H:\CodeProject\dept-ledger</span>
+          </footer>
+        </div>
       </div>
     </div>
   </aside>

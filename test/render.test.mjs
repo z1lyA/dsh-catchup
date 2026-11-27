@@ -187,6 +187,9 @@ const turns = [
   turn(4, '继续', '已经跑通了，现在整理配置项。'),
   turn(5, '配置项从哪读', '从 settings 读，默认值写在 schema 里。'),
   turn(6, '那 README 呢', 'README 我还没动，等你确认要不要加一节。'),
+  turn(7, '配置项怎么排序', '按字母序，和 schema 里的声明顺序一致。'),
+  turn(8, '加个注释', '每个字段补了一行注释，没有改动逻辑。'),
+  turn(9, '现在什么状态', '全部改完，12 个测试全过，等你决定要不要写进 README。'),
 ]
 
 console.log('\nrender — a session with an approval waiting')
@@ -194,7 +197,7 @@ console.log('\nrender — a session with an approval waiting')
 const approvalText = toText(registered.body(props({
   list: listOf(session({}), {
     turnOutline: turns,
-    sessionStats: { turns: 6, steps: 40, llmMs: 96_000 },
+    sessionStats: { turns: 9, steps: 40, llmMs: 96_000 },
     tokenUsage: { uncachedInputTokens: 40_000, outputTokens: 8_000, cacheReadTokens: 0, cacheWriteTokens: 0 },
     sessionListMetadata: { blank: false, lastPromptAt: Date.now() - 12 * 60_000 },
     modelSelection: { provider: 'wb-proxy', model: 'deepseek-v4.1-flash' },
@@ -211,18 +214,24 @@ check('shows the approval detail', () => {
   assert.ok(approvalText.includes('pwsh 删除临时目录'), approvalText)
 })
 
-check('shows the last turn as "where it stands"', () => {
-  assert.ok(approvalText.includes('README 我还没动'), approvalText)
+check('introduces the session from how it began', () => {
+  assert.ok(approvalText.includes('把限流加上，用令牌桶'), approvalText)
+  assert.ok(approvalText.includes('——'), 'the opening request and reply are joined: ' + approvalText)
+  assert.equal(approvalText.split('把限流加上，用令牌桶').length - 1, 1, 'the opening line must appear once, not in the list too')
 })
 
-check('collapses the timeline to the last 4 turns and offers the rest', () => {
+check('says where it stands in its own last words', () => {
+  assert.ok(approvalText.includes('全部改完'), approvalText)
+})
+
+check('the list holds what led here, not the last turn', () => {
+  assert.ok(approvalText.includes('配置项从哪读'), 'turn 5 is within the last six: ' + approvalText)
+  assert.equal(approvalText.includes('补那两个用例'), false, 'turn 2 must be folded away')
   assert.ok(approvalText.includes('再看 2 轮'), approvalText)
-  assert.equal(approvalText.includes('把限流加上'), false, 'turn 1 must be collapsed away')
-  assert.ok(approvalText.includes('配置项从哪读'), 'turn 5 is inside the last four')
 })
 
 check('shows the machine facts line', () => {
-  for (const fact of ['6 轮', '上次动 12m', '48k', 'LLM 96s', 'wb-proxy/deepseek-v4.1-flash', 'login-gateway']) {
+  for (const fact of ['9 轮', '上次动 12m', '48k', 'LLM 96s', 'wb-proxy/deepseek-v4.1-flash', 'login-gateway']) {
     assert.ok(approvalText.includes(fact), 'missing fact "' + fact + '" in: ' + approvalText)
   }
 })

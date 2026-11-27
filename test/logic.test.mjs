@@ -32,9 +32,9 @@ function check(name, fn) {
 const region = source.match(/\/\/ #region logic([\s\S]*?)\/\/ #endregion logic/)
 assert.ok(region, 'lib/client.js must keep its // #region logic block')
 const api = new Function(
-  region[1] + '\nreturn { plain, firstSentence, relTime, fmtK, textOf, pendingOf, contextOf, modelLabel }',
+  region[1] + '\nreturn { plain, firstSentence, relTime, fmtK, textOf, pendingOf, contextOf, modelLabel, turnsOf, introOf }',
 )()
-const { plain, firstSentence, relTime, fmtK, textOf, pendingOf, contextOf, modelLabel } = api
+const { plain, firstSentence, relTime, fmtK, textOf, pendingOf, contextOf, modelLabel, turnsOf, introOf } = api
 
 console.log('\nlogic')
 
@@ -163,6 +163,41 @@ check('everything absent reads as "nothing waiting"', () => {
 
 check('settled questions do not count as pending', () => {
   assert.equal(pendingOf({}, { userQuestions: { active: [], settled: [{ answers: [] }] } }), null)
+})
+
+console.log('\nwhat this session is about')
+
+const pair = (n, prompt, response) => ({ turn: n, seq: n * 10, prompt, response })
+
+check('turnsOf() reads the wire value, which is the array itself', () => {
+  const turns = [pair(1, 'a', 'b')]
+  assert.equal(turnsOf(turns), turns)
+})
+
+check('turnsOf() tolerates a { turns } wrapper and junk', () => {
+  const turns = [pair(1, 'a', 'b')]
+  assert.equal(turnsOf({ turns }), turns)
+  assert.deepEqual(turnsOf(undefined), [])
+  assert.deepEqual(turnsOf({}), [])
+})
+
+check('introOf() prefers the declared goal', () => {
+  const intro = introOf([pair(1, '把表并了', '并发好了。')], { goal: { text: '把 31 省的政策表并成一张总表' } })
+  assert.equal(intro, '把 31 省的政策表并成一张总表')
+})
+
+check('introOf() otherwise says how the session began, request and reply', () => {
+  const intro = introOf([pair(1, '把这两份日志归档。', '归档好了，一共 6 份。'), pair(2, 'x', 'y')], {})
+  assert.equal(intro, '把这两份日志归档 —— 归档好了，一共 6 份。')
+})
+
+check('introOf() stays silent for a single-turn session, where it would repeat the same line', () => {
+  assert.equal(introOf([pair(1, '把这两份日志归档。', '归档好了。')], {}), '')
+})
+
+check('introOf() never returns undefined', () => {
+  assert.equal(introOf([], {}), '')
+  assert.equal(introOf(undefined, undefined), '')
 })
 
 console.log('\ndictionaries')
