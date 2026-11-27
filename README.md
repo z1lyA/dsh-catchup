@@ -44,7 +44,13 @@ plugin_manager install_bundle  <这个目录的绝对路径>
 | 标签页类型 | `ctx.sidebarRightTabs.register` | id `dsh-catchup`，kind `catchup`，`keepMounted` |
 | 面板正文 | `sidebar.right.pane.tab`（key = id） | 全部 UI 在这里 |
 | 标签文字 | `sidebar.right.pane.tab.title` | 「接上」 |
-| 头部按钮 | `conversation.session.header.utilities` | order −8 |
+| 头部按钮 | `conversation.session.header.utilities` | order −8，**只有图标**（和设计台那个按钮一样），悬停显示说明 |
+
+## 界面
+
+设计源文件在 [`design/catchup.html`](design/catchup.html)：套的是 DSH 官方右侧栏外框，浅色和深色都量过（对比度、字号、点击区、溢出全部通过）。
+
+插件里不写内联样式，而是注入一段前缀化的 `.dsh-catchup` 样式表。灰阶用 `color-mix(in oklab, currentColor …)` 从正文色混出来，所以**不依赖 `data-theme` 属性也能跟着深浅色走**——这个坑躲掉了：DSH 自带的 `--dsh-muted` 在白底只有 3.7:1，直接用会不够对比度。
 
 ## 开发
 

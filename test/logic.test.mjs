@@ -268,6 +268,36 @@ check('cordis.patch.yml is YAML, not JavaScript', () => {
   assert.ok(/^\s+name: dsh-catchup$/m.test(yaml), 'patch must name the package')
 })
 
+console.log('\nstyles')
+
+check('every class the markup uses has a rule, and no rule is orphaned', () => {
+  const cssBlock = source.match(/const CSS = \[([\s\S]*?)\]\.join\(''\)/)
+  assert.ok(cssBlock, 'client.js must keep its CSS array')
+  const css = cssBlock[1]
+  const styled = new Set([...css.matchAll(/\.(cu-[a-z][\w-]*)/g)].map((m) => m[1]))
+  const rest = source.replace(cssBlock[0], '')
+  const used = new Set([...rest.matchAll(/\b(cu-[a-z][\w-]*)\b/g)].map((m) => m[1]))
+  const missing = [...used].filter((c) => !styled.has(c))
+  const orphaned = [...styled].filter((c) => !used.has(c))
+  assert.deepEqual(missing, [], 'classes used in markup but never styled: ' + missing.join(', '))
+  assert.deepEqual(orphaned, [], 'styled but never used: ' + orphaned.join(', '))
+})
+
+check('the stylesheet is prefix-scoped, not global', () => {
+  const cssBlock = source.match(/const CSS = \[([\s\S]*?)\]\.join\(''\)/)[1]
+  const cssText = [...cssBlock.matchAll(/'((?:[^'\\]|\\.)*)'/g)].map((m) => m[1]).join('\n')
+  assert.ok(cssText.includes('.dsh-catchup'), 'root rule must hang off .dsh-catchup')
+  for (const chunk of cssText.split('}')) {
+    if (!chunk.includes('{')) continue
+    const selector = chunk.split('{')[0].trim()
+    if (selector === '') continue
+    assert.ok(
+      selector.startsWith('.dsh-catchup'),
+      'unscoped rule would leak into the host UI: ' + selector.slice(0, 60),
+    )
+  }
+})
+
 console.log('')
 if (failures > 0) {
   console.log(failures + ' FAILED')

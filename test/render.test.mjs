@@ -193,7 +193,7 @@ console.log('\nrender — a session with an approval waiting')
 
 const approvalText = toText(registered.body(props({
   list: listOf(session({}), {
-    turnOutline: { turns },
+    turnOutline: turns,
     sessionStats: { turns: 6, steps: 40, llmMs: 96_000 },
     tokenUsage: { uncachedInputTokens: 40_000, outputTokens: 8_000, cacheReadTokens: 0, cacheWriteTokens: 0 },
     sessionListMetadata: { blank: false, lastPromptAt: Date.now() - 12 * 60_000 },
@@ -230,7 +230,7 @@ check('shows the machine facts line', () => {
 console.log('\nrender — nothing waiting')
 
 const idleText = toText(registered.body(props({
-  list: listOf(session({}), { turnOutline: { turns: turns.slice(0, 2) } }),
+  list: listOf(session({}), { turnOutline: turns.slice(0, 2) }),
   status: { running: false, pendingInteraction: undefined, completionUnread: false },
 })))
 
@@ -246,7 +246,7 @@ console.log('\nrender — an agent question with options')
 
 const questionText = toText(registered.body(props({
   list: listOf(session({}), {
-    turnOutline: { turns: turns.slice(0, 3) },
+    turnOutline: turns.slice(0, 3),
     userQuestions: {
       active: [{ callId: 'c1', questions: [{ question: '字段映射按哪个来？', options: [{ label: '按省份' }, { label: '按年份' }] }], state: 'open' }],
       settled: [],
@@ -277,7 +277,7 @@ console.log('\nrender — a running session with no completed turn yet')
 let runningText = ''
 check('renders without throwing and says there is nothing to catch up on', () => {
   runningText = toText(registered.body(props({
-    list: listOf(session({}), { turnOutline: { turns: [] } }),
+    list: listOf(session({}), { turnOutline: [] }),
     status: { running: true, pendingInteraction: undefined, completionUnread: false },
   })))
   assert.ok(runningText.includes('运行中'), runningText)
@@ -286,18 +286,29 @@ check('renders without throwing and says there is nothing to catch up on', () =>
 
 console.log('\nrender — label and header button')
 
+check('the panel root carries the style hook', () => {
+  const node = registered.body(props({
+    list: listOf(session({}), { turnOutline: turns.slice(0, 2) }),
+    status: { running: true, pendingInteraction: undefined, completionUnread: false },
+  }))
+  assert.equal(node.props.className, 'dsh-catchup')
+})
+
 check('tab title renders 接上', () => {
   assert.equal(toText(registered.title({ t: (k) => localeDict.catchup[k] || k })), '接上')
 })
 
-check('header button renders a label and opens the tab for the right session', () => {
+check('header button is icon-only but still labelled and clickable', () => {
   let opened = null
-  const text = toText(registered.header({
+  const node = registered.header({
     t: (k) => localeDict.catchup[k] || k,
     sessionId: 's1',
     open: (sid) => { opened = sid },
-  }))
-  assert.ok(text.includes('接上'), text)
+  })
+  assert.equal(toText(node).trim(), '', 'the button must not render a text label')
+  assert.equal(node.props['aria-label'], '接上：这个会话停在哪、有没有事等你')
+  node.props.onClick()
+  assert.equal(opened, 's1', 'clicking must open the tab for this session')
 })
 
 console.log('')

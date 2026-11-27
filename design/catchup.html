@@ -1,0 +1,189 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=1280">
+<meta name="dsh-design" content="dshplugin 1280x800">
+<title>面板 · 接上</title>
+<link rel="stylesheet" href="dsh-shell.css">
+<!-- 外框（DSH 插件 · 右侧栏面板）：只改 data-slot 里面，别动外框的结构、文字和 dsh-shell.css -->
+<style>
+  /* ── 接上：右侧栏面板 ───────────────────────────────────────── */
+  [data-slot="main"] {
+    /* 用 currentColor 混出来的灰和琥珀：深浅色自动跟着走，不依赖 data-theme 是否存在。
+       DSH 自己的 --dsh-muted 在白底只有 3.7:1，这里要 ≥ 4.5:1。 */
+    --cu-soft: color-mix(in oklab, currentColor 70%, transparent);
+    --cu-mute: color-mix(in oklab, currentColor 62%, transparent);
+    --cu-warn: color-mix(in oklab, #a86c08 80%, currentColor);
+    --cu-warn-tint: color-mix(in oklab, #c98a1b 10%, transparent);
+    --cu-warn-line: color-mix(in oklab, #c98a1b 60%, transparent);
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    overflow-y: auto;
+    font-family: var(--dsh-font);
+    color: var(--dsh-fg);
+  }
+
+  [data-slot="main"] .cu { padding: 16px 18px 28px; display: grid; gap: 18px; }
+
+  /* 头部：会话名 + 状态 */
+  [data-slot="main"] .cu-head { display: flex; align-items: center; gap: 8px; min-width: 0; }
+  [data-slot="main"] .cu-title {
+    font-size: 14px; font-weight: 600; letter-spacing: -0.01em;
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1 1 auto; min-width: 0;
+  }
+  [data-slot="main"] .cu-chip {
+    flex: 0 0 auto; font-size: 12px; line-height: 19px; padding: 0 7px;
+    border: 1px solid currentColor; border-radius: 5px; white-space: nowrap;
+  }
+  [data-slot="main"] .cu-chip-warn { color: var(--cu-warn); }
+  [data-slot="main"] .cu-chip-run { color: var(--dsh-accent); }
+
+  /* 小节标题 */
+  [data-slot="main"] .cu-kicker {
+    font-size: 12px; letter-spacing: 0.06em; color: var(--cu-soft); margin-bottom: 6px;
+  }
+
+  /* 需要你拍板：唯一有颜色的块 */
+  [data-slot="main"] .cu-hero {
+    border: 1px solid var(--cu-warn-line); border-left-width: 2px;
+    background: var(--cu-warn-tint); border-radius: 10px; padding: 12px 14px 13px;
+  }
+  [data-slot="main"] .cu-hero .cu-kicker { color: var(--cu-warn); }
+  [data-slot="main"] .cu-ask { margin: 0; font-size: 13.5px; line-height: 1.6; }
+  [data-slot="main"] .cu-opts { list-style: none; margin: 9px 0 0; padding: 0; display: grid; gap: 6px; }
+  [data-slot="main"] .cu-opts li {
+    display: flex; gap: 8px; align-items: baseline;
+    font-size: 13px; line-height: 1.5; color: var(--dsh-fg); opacity: 0.9;
+  }
+  [data-slot="main"] .cu-key {
+    flex: 0 0 auto; width: 19px; height: 19px; border-radius: 4px;
+    border: 1px solid var(--dsh-line); font-size: 12px; line-height: 17px;
+    text-align: center; color: var(--cu-soft);
+  }
+
+  /* 没事等你：安静的一行 */
+  [data-slot="main"] .cu-clear {
+    display: flex; align-items: center; gap: 7px;
+    font-size: 13px; color: var(--cu-soft);
+  }
+  [data-slot="main"] .cu-clear svg { width: 15px; height: 15px; flex: 0 0 auto; opacity: 0.7; }
+
+  /* 现在停在哪 */
+  [data-slot="main"] .cu-now { margin: 0; font-size: 14px; line-height: 1.68; }
+
+  /* 最近几轮：左侧一条细轨 */
+  [data-slot="main"] .cu-turns { list-style: none; margin: 0; padding: 0 0 0 2px; display: grid; gap: 12px; }
+  [data-slot="main"] .cu-turn { display: grid; grid-template-columns: 22px 1fr; gap: 8px; }
+  [data-slot="main"] .cu-idx {
+    font-size: 12px; color: var(--cu-mute);
+    font-variant-numeric: tabular-nums; padding-top: 2px; text-align: right;
+  }
+  [data-slot="main"] .cu-you {
+    margin: 0; font-size: 13px; line-height: 1.5; font-weight: 500;
+    display: -webkit-box; -webkit-line-clamp: 1; -webkit-box-orient: vertical; overflow: hidden;
+  }
+  [data-slot="main"] .cu-it {
+    margin: 2px 0 0; font-size: 13px; line-height: 1.55; color: var(--cu-soft);
+    display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+  }
+  [data-slot="main"] .cu-more {
+    margin-top: 6px; padding: 5px 2px; min-height: 28px; border: 0; background: none; cursor: pointer;
+    font: inherit; font-size: 12.5px; color: var(--cu-soft); text-decoration: underline;
+    text-underline-offset: 3px;
+  }
+  [data-slot="main"] .cu-more:hover { color: var(--dsh-fg); }
+
+  /* 底部机器事实 */
+  [data-slot="main"] .cu-facts {
+    display: flex; flex-wrap: wrap; gap: 3px 10px;
+    font-size: 12px; color: var(--cu-mute); font-variant-numeric: tabular-nums;
+    border-top: 1px solid var(--dsh-line); padding-top: 12px; margin-top: 2px;
+  }
+  [data-slot="main"] .cu-cwd { flex: 1 1 100%; word-break: break-all; }
+
+  /* 空会话 */
+  [data-slot="main"] .cu-empty { padding: 40px 6px; text-align: center; color: var(--cu-soft); font-size: 13px; }
+</style>
+</head>
+<body>
+<div class="dsh-app" data-frame="dsh/panel">
+  <aside class="dsh-side">
+    <div class="dsh-brand"><div class="dsh-logo">deepseek<span class="dsh-logo-tag">HARNESS</span></div><div class="dsh-iconbtn"><svg class="dsh-i" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M9 3v18"/></svg></div></div>
+    <div class="dsh-new"><svg class="dsh-i" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 8v8M8 12h8"/></svg>新会话</div>
+    <nav class="dsh-nav">
+      <div class="dsh-row"><svg class="dsh-i" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2.5l3 3-3 3-3-3zM18.5 9l3 3-3 3-3-3zM5.5 9l3 3-3 3-3-3zM12 15.5l3 3-3 3-3-3z"/></svg>插件</div>
+      <div class="dsh-row"><svg class="dsh-i" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>自动化任务</div>
+      <div class="dsh-row"><svg class="dsh-i" viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="4" width="6" height="6" rx="1.5"/><rect x="14" y="4" width="6" height="6" rx="3"/><rect x="4" y="14" width="6" height="6" rx="1.5"/><rect x="14" y="14" width="6" height="6" rx="1.5"/></svg>更多</div>
+    </nav>
+    <div class="dsh-sec">工作区<div class="dsh-sec-acts"><div class="dsh-iconbtn"><svg class="dsh-i" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/></svg></div><div class="dsh-iconbtn"><svg class="dsh-i" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 8h10M18 8h2M4 16h2M10 16h10"/><circle cx="16" cy="8" r="2"/><circle cx="8" cy="16" r="2"/></svg></div><div class="dsh-iconbtn"><svg class="dsh-i" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><path d="M12 11v5M9.5 13.5h5"/></svg></div></div></div>
+    <div class="dsh-row"><span class="dsh-folder"><svg class="dsh-i" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg></span>我的项目</div>
+    <div class="dsh-sess on">整理会议记录<span class="dsh-time">2 小时</span></div>
+    <div class="dsh-sess">新会话</div>
+    <div class="dsh-acct"><div class="dsh-avatar">我</div>我的账号</div>
+  </aside>
+  <main class="dsh-main">
+    <header class="dsh-head">
+      <div class="dsh-crumbs">整理会议记录<span class="dsh-mode">标准模式<svg class="dsh-i" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg></span></div>
+      <div class="dsh-utils"><div class="dsh-iconbtn on"><span data-slot="button-icon"><svg class="dsh-i" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3.5h7.5L18 8v12.5H6z"/><path d="M13.5 3.5V8H18"/><path d="M14 14.5H9.5"/><path d="M11.5 12L9 14.5l2.5 2.5"/></svg></span></div><div class="dsh-split"><svg class="dsh-i" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 8l-4 4 4 4M15 8l4 4-4 4"/></svg><svg class="dsh-i" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg></div><div class="dsh-iconbtn"><svg class="dsh-i" viewBox="0 0 24 24" aria-hidden="true"><circle cx="5" cy="12" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/></svg></div></div>
+      <div class="dsh-iconbtn dsh-corner"><svg class="dsh-i" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M15 3v18"/></svg></div>
+      <div class="dsh-tabs" role="tablist"><div class="dsh-tab on">对话</div><div class="dsh-tab">轨迹</div></div>
+    </header>
+    <div class="dsh-chat">
+      <div class="dsh-msg-me">帮我把这周的会议记录整理成一页</div>
+      <div class="dsh-msg-ai"><p>好的，我先读一下会议记录，再按议题归类。</p><p>整理好了，放在「会议纪要.md」。</p></div>
+    </div>
+    <div class="dsh-composer">
+      <div class="dsh-ph">描述你想要构建的内容，/ 调用指令，@ 文件或对话</div>
+      <div class="dsh-cbar"><div class="dsh-cl"><svg class="dsh-i" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg><span class="dsh-mode"><svg class="dsh-i" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l7 3v6c0 4-3 7-7 9-4-2-7-5-7-9V6z"/></svg>工作区内修改<svg class="dsh-i" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg></span></div><div class="dsh-cr">DeepSeek V4.1 Flash<div class="dsh-send"><svg class="dsh-i" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 19V5M6 11l6-6 6 6"/></svg></div></div></div>
+    </div>
+  </main>
+  <aside class="dsh-right">
+    <div class="dsh-rtabs"><div class="dsh-rtab"><svg class="dsh-i" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 11l8-7 8 7v9H4z"/></svg>开始</div><div class="dsh-rtab on"><span data-slot="panel-title">接上</span></div></div>
+    <div data-slot="main">
+      <!-- 插件面板：点会话顶栏按钮后右侧栏显示的内容 -->
+      <div class="cu">
+        <div class="cu-head">
+          <div class="cu-title">整理会议记录</div>
+          <span class="cu-chip cu-chip-warn">待批准</span>
+        </div>
+
+        <section class="cu-hero">
+          <div class="cu-kicker">需要你拍板</div>
+          <p class="cu-ask">它想用 pwsh 删掉 <b>%TEMP%\gi_reorg</b> 这两个临时目录，等你点头。</p>
+          <ul class="cu-opts">
+            <li><span class="cu-key">A</span>只删这两个目录，别动别的</li>
+            <li><span class="cu-key">B</span>先挪进回收站，确认无误再清</li>
+          </ul>
+        </section>
+
+        <section>
+          <div class="cu-kicker">现在停在哪</div>
+          <p class="cu-now">31 省的并表已经跑完，台账字段补了一半，卡在字段映射还没定。</p>
+        </section>
+
+        <section>
+          <div class="cu-kicker">最近几轮</div>
+          <ol class="cu-turns">
+            <li class="cu-turn"><span class="cu-idx">12</span><div><p class="cu-you">把这两份移动日志归档</p><p class="cu-it">归档好了，一共 6 份日志，都放进 99_归档\政策\备份\ 了。</p></div></li>
+            <li class="cu-turn"><span class="cu-idx">13</span><div><p class="cu-you">台账那块还差什么</p><p class="cu-it">差字段映射，31 省的表格列名不一致，得先定按省份还是按年份归并。</p></div></li>
+            <li class="cu-turn"><span class="cu-idx">14</span><div><p class="cu-you">你倾向哪个</p><p class="cu-it">按年份更稳，因为同一省份跨年会变口径；不过这会丢掉省级横向对比。</p></div></li>
+          </ol>
+          <button class="cu-more" type="button">再看 11 轮</button>
+        </section>
+
+        <footer class="cu-facts">
+          <span>14 轮</span>
+          <span>上次动 12m</span>
+          <span>上下文 48k</span>
+          <span>LLM 96s</span>
+          <span>deepseek-v4.1-flash</span>
+          <span class="cu-cwd">H:\CodeProject\dept-ledger</span>
+        </footer>
+      </div>
+    </div>
+  </aside>
+</div>
+</body>
+</html>

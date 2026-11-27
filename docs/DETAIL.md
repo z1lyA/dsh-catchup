@@ -61,6 +61,18 @@
 
 ## 已知缺口
 
-- 现状句是截断的首句，会丢细节；这是取舍。
+- 现状句是截断的首句，会丢细节；这是取舍。原料来自 `turnOutline`，每轮只留你的提问 50 字 + 它的回答 120 字（UTF-16 单位、空白已折叠），**上限是 DSH 折叠时写死的，不是插件选的**。要全文就得再写一个 Host 半边，用 `session/assistantOutput(...)` 定向取最后一条助手消息——0 token，但多一次请求。
 - `pendingInteraction` 的 payload 形状没有官方契约，只能防御式取值。
 - 没做"复制这份简报"和"标为已读"——前者容易做成半个导出功能，后者会和官方的未读语义打架。
+
+## 样式怎么落进插件
+
+设计稿是 `design/catchup.html`（DSH 官方右侧栏外框，浅色/深色都过 `check_design`）。
+
+插件里**不用内联 style**：`apply()` 时往 `<head>` 塞一段 `<style id="dsh-catchup-style">`，所有规则挂在 `.dsh-catchup` 下。两条纪律由测试守住：
+
+1. 标记里用到的每个 `cu-*` 类，样式里必须有对应规则；样式里也不许有没人用的规则。
+2. 每条规则必须以 `.dsh-catchup` 开头，否则会漏进宿主 UI。
+
+灰阶不用 DSH 的 `--dsh-muted`（白底只有 3.7:1），而是 `color-mix(in oklab, currentColor 62%, transparent)`：从正文色混出来，深浅色自动跟着走，也就不必知道 DSH 有没有设 `data-theme`。
+
