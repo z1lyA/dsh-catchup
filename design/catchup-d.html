@@ -167,9 +167,12 @@
     padding: 14px 15px;
   }
   /* 三张卡片按内容权重分高度：会话是什么占九份，现状占十六份，待办占十份 */
-  [data-slot="main"] .card-1 { flex: 0.9 1 0; }
+  /* 第一张固定高度：每次进来高度都跟着内容变，看着像在跳。标题也放大一档。 */
+  [data-slot="main"] .card-1 { flex: 0 0 auto; height: 140px; }
   [data-slot="main"] .card-2 { flex: 1.6 1 0; justify-content: center; gap: 10px; }
   [data-slot="main"] .card-3 { flex: 1 1 0; }
+  [data-slot="main"] .cu-title { font-size: 18px; }
+  [data-slot="main"] .row-text { font-size: 14px; }
 
   /* 标题再大一点：它是这张卡片的落点，14px 太像标签 */
   [data-slot="main"] .cu-title { font-size: 16px; font-weight: 650; letter-spacing: -0.012em; }
