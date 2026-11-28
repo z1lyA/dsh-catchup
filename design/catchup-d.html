@@ -171,6 +171,9 @@
   [data-slot="main"] .card-2 { flex: 1.6 1 0; justify-content: center; gap: 10px; }
   [data-slot="main"] .card-3 { flex: 1 1 0; }
 
+  /* 标题再大一点：它是这张卡片的落点，14px 太像标签 */
+  [data-slot="main"] .cu-title { font-size: 16px; font-weight: 650; letter-spacing: -0.012em; }
+
   /* 事实行不是页脚，也不贴卡片底边：跟上面两段连成一组，整组在卡片里居中，
      这样卡片内的空白上下对称，看起来是内边距而不是"中间劈开一道缝"。 */
   [data-slot="main"] .facts {
@@ -178,7 +181,9 @@
     padding-top: 10px;
     border-top: 1px solid var(--cu-line);
     font-size: 12px;
+    gap: 2px 12px;
   }
+  [data-slot="main"] .facts b { font-weight: 500; color: color-mix(in oklab, currentColor 82%, transparent); }
 </style>
 </head>
 <body>
@@ -231,9 +236,9 @@
           <p class="cu-now">面板已经能跑：右栏标签、头部按钮、三块内容都出来了，数据和用量都能读到。</p>
           <p class="cu-blk">卡点：第一次真跑时模型把额度全花在思考上，正文字都没写；现在靠放大额度绕过去，并没有根治。</p>
           <div class="facts">
-            <span>上次动 6m</span>
-            <span>摘要 3.1k↑ / 917↓ ≈¥0.034</span>
-            <span>累计 3 次 ≈¥0.10</span>
+            <span>6 分钟前</span>
+            <span>输入 3.1k / 输出 917 ≈¥0.034</span>
+            <span>累计（全部会话）3 次 ≈¥0.10</span>
           </div>
         </section>
 

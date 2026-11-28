@@ -196,11 +196,12 @@ check('2 — where it stands: the last turn, in its own words', () => {
 })
 
 check('2 — the facts line carries orientation, never the session\'s own context cost', () => {
-  for (const fact of ['9 轮', '上次动 12m']) {
+  for (const fact of ['12 分钟前']) {
     assert.ok(approvalText.includes(fact), 'missing "' + fact + '" in: ' + approvalText)
   }
-  assert.ok(approvalText.includes(' · '), 'facts must be joined by a middle dot: ' + approvalText)
+  assert.ok(approvalText.includes('9 轮'), 'the turn count belongs to the first card: ' + approvalText)
   assert.equal(approvalText.includes('上下文'), false, 'the session context usage is not the plugin\'s spend')
+  assert.equal(approvalText.includes('上次动'), false, 'no unexplained abbreviations in the facts row')
 })
 
 check('3 — what is still open, one condensed line with its tag', () => {
@@ -208,15 +209,16 @@ check('3 — what is still open, one condensed line with its tag', () => {
   assert.ok(approvalText.includes('pwsh 删除临时目录'), approvalText)
 })
 
-check('the three blocks come in the order 介绍 → 现状 → 待拍板', () => {
+check('the three cards come in the order 介绍 → 现状 → 待拍板', () => {
   const node = registered.body(props({
     list: listOf(session({}), { turnOutline: turns }),
     status: { running: false, pendingInteraction: { kind: 'approval', title: 'pwsh 删除临时目录' }, completionUnread: false },
   }))
   const cu = node.children[0]
-  assert.equal(cu.props['data-open'], '1')
-  assert.equal(cu.children.filter(Boolean).length, 3, 'three regions when something is open')
-  assert.equal(cu.children[2].props.className, 'cu-block cu-open', 'the open region is last and is the coloured one')
+  assert.equal(cu.children.filter(Boolean).length, 3, 'three cards when something is open')
+  assert.equal(cu.children[0].props.className, 'card card-1')
+  assert.equal(cu.children[1].props.className, 'card card-2')
+  assert.equal(cu.children[2].props.className, 'card card-3', 'the open card is last')
 
   const title = approvalText.indexOf('登录页限流')
   const now = approvalText.indexOf('全部改完')
@@ -244,15 +246,14 @@ const idleText = toText(registered.body(props({
   status: { running: false, pendingInteraction: undefined, completionUnread: false },
 })))
 
-check('with nothing open there is no third block, and the grid says so', () => {
+check('with nothing open there is no third card', () => {
   const node = registered.body(props({
     list: listOf(session({}), { turnOutline: turns }),
     status: { running: false, pendingInteraction: undefined, completionUnread: false },
   }))
   const cu = node.children[0]
-  assert.equal(cu.props['data-open'], '0')
-  assert.equal(cu.children.filter(Boolean).length, 2, 'a session with nothing open must render two regions, not three')
-  assert.equal(idleText.includes('没事等你'), false, 'no filler line: the absent block is the message')
+  assert.equal(cu.children.filter(Boolean).length, 2, 'a session with nothing open renders two cards')
+  assert.equal(idleText.includes('没事等你'), false, 'no filler line: the absent card is the message')
 })
 
 check('does not claim there is nothing while a todo is open', () => {
