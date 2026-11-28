@@ -74,6 +74,11 @@ function makeCtx(sessions) {
           for (const piece of String('这里是想一想的内容').match(/[\s\S]{1,4}/g) || []) {
             yield { type: 'reasoning-delta', index: 0, text: piece }
           }
+          if (state.onlyReasoning) {
+            yield { type: 'block-end', index: 0, block: { type: 'reasoning', text: '这里是想一想的内容' } }
+            yield { type: 'finish', reason: { kind: 'max-tokens' } }
+            return
+          }
           yield { type: 'block-start', index: 1, blockType: 'text' }
           for (const piece of String(answer).match(/[\s\S]{1,40}/g) || []) {
             yield { type: 'text-delta', index: 1, text: piece }
@@ -130,7 +135,7 @@ check('the model was asked with the session\'s own route, a system prompt and a 
   const options = state.calls[0]
   assert.equal(options.provider, 'wb-proxy')
   assert.equal(options.model, 'deepseek-v4.1-flash')
-  assert.equal(options.maxTokens, 1200, 'the cap leaves room for reasoning tokens')
+  assert.equal(options.maxTokens, 5000, 'the cap has to cover reasoning, which comes first')
   assert.equal(options.temperature, 0)
   assert.ok(typeof options.system === 'string' && options.system.length > 20)
   assert.equal(options.messages.length, 1)
@@ -216,6 +221,16 @@ await checkAsync('hitting the token cap is only fatal when the answer did not su
   const cut = await call('http://x/api/session-digest?sessionId=s5')
   assert.equal(cut.status, 500)
   assert.ok(cut.raw.includes('截断'), cut.raw)
+})
+
+await checkAsync('a reasoning-only answer is named as such, not as a JSON problem', async () => {
+  state.onlyReasoning = true
+  sessions.s6 = makeSession('s6', 13, [userMsg('看看'), botMsg('好')])
+  const res = await call('http://x/api/session-digest?sessionId=s6')
+  state.onlyReasoning = false
+  assert.equal(res.status, 500)
+  assert.ok(res.raw.includes('只输出了思考过程'), res.raw)
+  assert.ok(res.raw.includes('maxOutputTokens'), res.raw)
 })
 
 console.log('')
