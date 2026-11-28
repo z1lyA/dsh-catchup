@@ -1,6 +1,6 @@
 {
   "name": "dsh-catchup",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "private": true,
   "type": "module",
   "description": "右侧栏「接上」：切回一个会话之前，先看清它停在哪、有没有事等你拍板。零模型调用。",
