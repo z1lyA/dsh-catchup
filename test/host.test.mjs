@@ -67,14 +67,20 @@ function makeCtx(sessions) {
             yield { type: 'finish', reason: { kind: 'error', failure: { message: 'provider exploded' } } }
             return
           }
+          // The real protocol (dsh-llm/assembler.ts): deltas per index, then a
+          // separate usage chunk and a finish. Reasoning arrives as its own block
+          // and must never end up in the answer.
+          yield { type: 'block-start', index: 0, blockType: 'reasoning' }
+          for (const piece of String('这里是想一想的内容').match(/[\s\S]{1,4}/g) || []) {
+            yield { type: 'reasoning-delta', index: 0, text: piece }
+          }
+          yield { type: 'block-start', index: 1, blockType: 'text' }
           for (const piece of String(answer).match(/[\s\S]{1,40}/g) || []) {
-            yield { type: 'text', text: piece }
+            yield { type: 'text-delta', index: 1, text: piece }
           }
-          yield {
-            type: 'finish',
-            reason: { kind: state.finishKind || 'stop' },
-            usage: { inputTokens: 3800, outputTokens: 120 },
-          }
+          yield { type: 'block-end', index: 1, block: { type: 'text', text: String(answer) } }
+          yield { type: 'usage', usage: { uncachedInputTokens: 3800, outputTokens: 120 } }
+          yield { type: 'finish', reason: { kind: state.finishKind || 'stop' } }
         })()
       },
     },
