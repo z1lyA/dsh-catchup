@@ -195,11 +195,12 @@ check('2 — where it stands: the last turn, in its own words', () => {
   assert.ok(approvalText.includes('全部改完'), approvalText)
 })
 
-check('2 — and three facts, one muted line', () => {
-  for (const fact of ['9 轮', '上次动 12m', '上下文 48k']) {
+check('2 — the facts line carries orientation, never the session\'s own context cost', () => {
+  for (const fact of ['9 轮', '上次动 12m']) {
     assert.ok(approvalText.includes(fact), 'missing "' + fact + '" in: ' + approvalText)
   }
   assert.ok(approvalText.includes(' · '), 'facts must be joined by a middle dot: ' + approvalText)
+  assert.equal(approvalText.includes('上下文'), false, 'the session context usage is not the plugin\'s spend')
 })
 
 check('3 — what is still open, one condensed line with its tag', () => {

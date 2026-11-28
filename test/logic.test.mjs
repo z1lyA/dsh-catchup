@@ -32,9 +32,9 @@ function check(name, fn) {
 const region = source.match(/\/\/ #region logic([\s\S]*?)\/\/ #endregion logic/)
 assert.ok(region, 'lib/client.js must keep its // #region logic block')
 const api = new Function(
-  region[1] + '\nreturn { plain, firstSentence, relTime, fmtK, textOf, turnsOf, pendingItemsOf, goalOf, contextOf, decodeDigest }',
+  region[1] + '\nreturn { plain, firstSentence, relTime, fmtK, textOf, turnsOf, pendingItemsOf, goalOf, decodeDigest }',
 )()
-const { plain, firstSentence, relTime, fmtK, textOf, turnsOf, pendingItemsOf, goalOf, contextOf, decodeDigest } = api
+const { plain, firstSentence, relTime, fmtK, textOf, turnsOf, pendingItemsOf, goalOf, decodeDigest } = api
 
 console.log('\nlogic')
 
@@ -98,11 +98,6 @@ check('fmtK() formats context sizes', () => {
   assert.equal(fmtK(45_000), '45k')
   assert.equal(fmtK(1_200_000), '1.2M')
   assert.equal(fmtK(NaN), '')
-})
-
-check('contextOf() sums the four token buckets', () => {
-  assert.equal(contextOf({ uncachedInputTokens: 100, outputTokens: 20, cacheReadTokens: 5, cacheWriteTokens: 1 }), 126)
-  assert.equal(contextOf(null), 0)
 })
 
 check('textOf() digs a string out of whatever shape the host hands over', () => {
