@@ -192,6 +192,25 @@ await checkAsync('a session that moved on gets a fresh answer', async () => {
   assert.equal(res.body.coveredThroughSeq, 43)
 })
 
+await checkAsync('feeds the whole arc, not only the tail', async () => {
+  const many = [userMsg('开场：做一个摘要插件')]
+  for (let i = 1; i <= 20; i += 1) {
+    many.push(botMsg('第 ' + i + ' 步做完了'), userMsg('问题 ' + i))
+  }
+  many.push(botMsg('最后一步：交付'))
+  sessions.s9 = makeSession('s9', 20, many)
+  state.nextAnswer = undefined
+  const res = await call('http://x/api/session-digest?sessionId=s9')
+  assert.equal(res.status, 200, res.raw)
+  const material = state.calls[state.calls.length - 1].messages[0].content[0].text
+  assert.ok(material.includes('开场：做一个摘要插件'), 'the opening must be in the material')
+  assert.ok(material.includes('最后一步：交付'), 'the latest must be in the material')
+  assert.ok(material.includes('[开头]') && material.includes('[最近]'), material.slice(0, 160))
+  assert.ok(material.includes('[中途]'), 'a middle sample must be in the material')
+  // and it must stay within the byte budget
+  assert.ok(Buffer.byteLength(material, 'utf8') <= 24000)
+})
+
 console.log('\nbad input')
 
 await checkAsync('no sessionId is a 400', async () => {
@@ -213,8 +232,7 @@ await checkAsync('prose instead of JSON fails loudly, and the cache is not writt
   assert.ok(res.raw.includes('JSON'), res.raw)
   assert.equal(state.calls.length, before + 1)
   const dir = join(home, 'cache', 'dsh-catchup')
-  const digs = readdirSync(dir).filter((f) => f !== 'totals.json')
-  assert.equal(digs.length, 1, 'a failed answer must not be cached')
+  assert.equal(existsSync(join(dir, 's2.json')), false, 'a failed answer must not be cached')
 })
 
 await checkAsync('a failure cools down instead of re-hitting the provider on every render', async () => {
