@@ -32,9 +32,9 @@ function check(name, fn) {
 const region = source.match(/\/\/ #region logic([\s\S]*?)\/\/ #endregion logic/)
 assert.ok(region, 'lib/client.js must keep its // #region logic block')
 const api = new Function(
-  region[1] + '\nreturn { plain, firstSentence, relTime, fmtK, textOf, turnsOf, pendingItemsOf, goalOf, decodeDigest, mergeOpen, money }',
+  region[1] + '\nreturn { plain, firstSentence, relTime, relCn, fmtK, textOf, turnsOf, pendingItemsOf, goalOf, decodeDigest, mergeOpen, money, clipQuote }',
 )()
-const { plain, firstSentence, relTime, fmtK, textOf, turnsOf, pendingItemsOf, goalOf, decodeDigest, mergeOpen, money } = api
+const { plain, firstSentence, relTime, relCn, fmtK, textOf, turnsOf, pendingItemsOf, goalOf, decodeDigest, mergeOpen, money, clipQuote } = api
 
 console.log('\nlogic')
 
@@ -210,6 +210,24 @@ check('mergeOpen() stays a glance: five at most', () => {
 check('mergeOpen() tolerates junk', () => {
   assert.deepEqual(mergeOpen(undefined, undefined), [])
   assert.deepEqual(mergeOpen(null, 'nope'), [])
+})
+
+check('relCn() says the age in words, not in letter codes', () => {
+  const now = 1_700_000_000_000
+  assert.equal(relCn(now - 20_000, now), '刚刚')
+  assert.equal(relCn(now - 6 * 60_000, now), '6 分钟前')
+  assert.equal(relCn(now - 3 * 3600_000, now), '3 小时前')
+  assert.equal(relCn(now - 2 * 86400_000, now), '2 天前')
+  assert.equal(relCn(now - 90 * 86400_000, now), '3 个月前')
+  assert.equal(relCn(undefined, now), '')
+})
+
+check('clipQuote() turns a selection into one quoted line', () => {
+  assert.equal(clipQuote('  面板已经能跑：\n右栏标签、头部按钮  '), '面板已经能跑： 右栏标签、头部按钮')
+  assert.equal(clipQuote(''), '')
+  assert.equal(clipQuote(undefined), '')
+  assert.equal(clipQuote(null), '')
+  assert.equal(clipQuote('abc', 2), 'ab…')
 })
 
 check('money() keeps enough digits at these magnitudes', () => {
