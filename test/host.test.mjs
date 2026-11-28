@@ -61,7 +61,9 @@ function makeCtx(sessions) {
     llm: {
       stream: (options) => {
         state.calls.push(options)
-        const answer = state.nextAnswer === undefined ? '{"intro":"做并表","now":"跑完了，卡在映射。"}' : state.nextAnswer
+        const answer = state.nextAnswer === undefined
+          ? '{"intro":"做并表","now":"跑完了，卡在映射。","open":["等你定映射口径","确认后我补剩下 6 个字段"]}'
+          : state.nextAnswer
         return (async function* () {
           if (state.nextAnswer === '') {
             yield { type: 'finish', reason: { kind: 'error', failure: { message: 'provider exploded' } } }
@@ -130,14 +132,29 @@ await checkAsync('answers with the two sentences and the reported usage', async 
   assert.equal(res.body.coveredThroughSeq, 42)
 })
 
-check('the model was asked with the session\'s own route, a system prompt and a hard cap', () => {
-  assert.equal(state.calls.length, 1)
+await checkAsync('carries what is waiting on the human, straight from the answer', async () => {
+  const res = await call('http://x/api/session-digest?sessionId=s1')
+  assert.deepEqual(res.body.open, ['等你定映射口径', '确认后我补剩下 6 个字段'])
+})
+
+await checkAsync('adds this call to a running total the panel can show', async () => {
+  const res = await call('http://x/api/session-digest?sessionId=s1')
+  assert.equal(res.body.totals.calls, 1)
+  assert.equal(res.body.totals.input, 3800)
+  assert.equal(res.body.totals.output, 120)
+})
+
+check('the model was asked for the three fields, with the session\'s own route', () => {
+  assert.equal(state.calls.length >= 1, true)
   const options = state.calls[0]
   assert.equal(options.provider, 'wb-proxy')
   assert.equal(options.model, 'deepseek-v4.1-flash')
   assert.equal(options.maxTokens, 5000, 'the cap has to cover reasoning, which comes first')
   assert.equal(options.temperature, 0)
   assert.ok(typeof options.system === 'string' && options.system.length > 20)
+  for (const field of ['"intro"', '"now"', '"open"']) {
+    assert.ok(options.system.includes(field), 'the system prompt must ask for ' + field)
+  }
   assert.equal(options.messages.length, 1)
   assert.equal(options.messages[0].role, 'user')
   assert.ok(options.messages[0].content[0].text.includes('侧边栏摘要插件'), 'the conversation text must reach the model')
@@ -146,7 +163,9 @@ check('the model was asked with the session\'s own route, a system prompt and a 
 check('the answer is cached on disk under DSH_HOME', () => {
   const dir = join(home, 'cache', 'dsh-catchup')
   assert.ok(existsSync(dir), 'cache dir missing')
-  assert.equal(readdirSync(dir).length, 1)
+  const files = readdirSync(dir)
+  assert.ok(files.some((f) => f !== 'totals.json'), 'no per-session digest file: ' + files.join(','))
+  assert.ok(files.includes('totals.json'), 'the running total must be kept next to it')
 })
 
 await checkAsync('a second open with no new activity costs nothing', async () => {
@@ -186,7 +205,8 @@ await checkAsync('prose instead of JSON fails loudly, and the cache is not writt
   assert.ok(res.raw.includes('JSON'), res.raw)
   assert.equal(state.calls.length, before + 1)
   const dir = join(home, 'cache', 'dsh-catchup')
-  assert.equal(readdirSync(dir).length, 1, 'a failed answer must not be cached')
+  const digs = readdirSync(dir).filter((f) => f !== 'totals.json')
+  assert.equal(digs.length, 1, 'a failed answer must not be cached')
 })
 
 await checkAsync('a failure cools down instead of re-hitting the provider on every render', async () => {

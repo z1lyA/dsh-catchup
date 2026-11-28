@@ -32,9 +32,9 @@ function check(name, fn) {
 const region = source.match(/\/\/ #region logic([\s\S]*?)\/\/ #endregion logic/)
 assert.ok(region, 'lib/client.js must keep its // #region logic block')
 const api = new Function(
-  region[1] + '\nreturn { plain, firstSentence, relTime, fmtK, textOf, turnsOf, pendingItemsOf, goalOf, decodeDigest }',
+  region[1] + '\nreturn { plain, firstSentence, relTime, fmtK, textOf, turnsOf, pendingItemsOf, goalOf, decodeDigest, mergeOpen }',
 )()
-const { plain, firstSentence, relTime, fmtK, textOf, turnsOf, pendingItemsOf, goalOf, decodeDigest } = api
+const { plain, firstSentence, relTime, fmtK, textOf, turnsOf, pendingItemsOf, goalOf, decodeDigest, mergeOpen } = api
 
 console.log('\nlogic')
 
@@ -180,6 +180,38 @@ check('an item with no text is kept when it is the pending interaction itself', 
   assert.equal(items[0].text, '')
 })
 
+console.log('\nwhat the model spotted, merged in')
+
+check('mergeOpen() keeps the structured signals first', () => {
+  const structured = [{ kind: 'approval', text: '批准删目录' }]
+  const merged = mergeOpen(structured, ['等你定映射口径'])
+  assert.equal(merged[0].kind, 'approval')
+  assert.deepEqual(merged[1], { kind: 'open', text: '等你定映射口径' })
+})
+
+check('mergeOpen() is what catches a plain-prose request for a decision', () => {
+  // The session that exposed this: the agent asked in the message body, never
+  // through ask_user_question, so nothing structured ever arrived.
+  const merged = mergeOpen([], ['回一句「能干」或「干不了」'])
+  assert.deepEqual(merged, [{ kind: 'open', text: '回一句「能干」或「干不了」' }])
+})
+
+check('mergeOpen() drops duplicates and empties', () => {
+  const merged = mergeOpen([{ kind: 'todo', text: '补字段' }], ['补字段', '', '  ', null, 42])
+  assert.equal(merged.length, 1)
+  assert.equal(merged[0].kind, 'todo')
+})
+
+check('mergeOpen() stays a glance: five at most', () => {
+  const merged = mergeOpen([], ['a', 'b', 'c', 'd', 'e', 'f'])
+  assert.equal(merged.length, 5)
+})
+
+check('mergeOpen() tolerates junk', () => {
+  assert.deepEqual(mergeOpen(undefined, undefined), [])
+  assert.deepEqual(mergeOpen(null, 'nope'), [])
+})
+
 console.log('\nwhat this session is')
 
 check('goalOf() uses the declared goal', () => {
@@ -196,7 +228,17 @@ console.log('\nthe host\'s answer')
 
 check('decodeDigest() keeps the two sentences and the reported usage', () => {
   const d = decodeDigest({ intro: '做并表', now: '跑完了，卡在映射。', usage: { input: 3800, output: 120 } })
-  assert.deepEqual(d, { intro: '做并表', now: '跑完了，卡在映射。', usage: { input: 3800, output: 120 } })
+  assert.deepEqual(d, { intro: '做并表', now: '跑完了，卡在映射。', open: [], usage: { input: 3800, output: 120 }, totals: null })
+})
+
+check('decodeDigest() carries the open list and the running total', () => {
+  const d = decodeDigest({
+    now: 'ok',
+    open: ['等你定口径', '  ', '确认后补字段'],
+    totals: { calls: 12, input: 87000, output: 14000 },
+  })
+  assert.deepEqual(d.open, ['等你定口径', '确认后补字段'])
+  assert.deepEqual(d.totals, { calls: 12, input: 87000, output: 14000 })
 })
 
 check('decodeDigest() rejects anything without a "now" sentence', () => {
@@ -208,7 +250,7 @@ check('decodeDigest() rejects anything without a "now" sentence', () => {
 })
 
 check('decodeDigest() treats a missing intro or usage as absent, not as an error', () => {
-  assert.deepEqual(decodeDigest({ now: 'ok' }), { intro: '', now: 'ok', usage: null })
+  assert.deepEqual(decodeDigest({ now: 'ok' }), { intro: '', now: 'ok', open: [], usage: null, totals: null })
   assert.equal(decodeDigest({ now: 'ok', usage: { input: 0, output: 0 } }).usage, null)
   assert.equal(decodeDigest({ now: 'ok', usage: 'junk' }).usage, null)
 })
