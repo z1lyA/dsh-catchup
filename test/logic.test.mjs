@@ -32,9 +32,9 @@ function check(name, fn) {
 const region = source.match(/\/\/ #region logic([\s\S]*?)\/\/ #endregion logic/)
 assert.ok(region, 'lib/client.js must keep its // #region logic block')
 const api = new Function(
-  region[1] + '\nreturn { plain, firstSentence, relTime, fmtK, textOf, turnsOf, pendingItemsOf, goalOf, decodeDigest, mergeOpen }',
+  region[1] + '\nreturn { plain, firstSentence, relTime, fmtK, textOf, turnsOf, pendingItemsOf, goalOf, decodeDigest, mergeOpen, money }',
 )()
-const { plain, firstSentence, relTime, fmtK, textOf, turnsOf, pendingItemsOf, goalOf, decodeDigest, mergeOpen } = api
+const { plain, firstSentence, relTime, fmtK, textOf, turnsOf, pendingItemsOf, goalOf, decodeDigest, mergeOpen, money } = api
 
 console.log('\nlogic')
 
@@ -212,6 +212,29 @@ check('mergeOpen() tolerates junk', () => {
   assert.deepEqual(mergeOpen(null, 'nope'), [])
 })
 
+check('money() keeps enough digits at these magnitudes', () => {
+  assert.equal(money(0, '¥'), '¥0')
+  assert.equal(money(0.0341, '¥'), '¥0.034')
+  assert.equal(money(0.0034, '¥'), '¥0.0034')
+  assert.equal(money(12.3456, '¥'), '¥12.35')
+  assert.equal(money(-1), '')
+  assert.equal(money('nope'), '')
+  assert.equal(money(1, ''), '¥1.00')
+})
+
+check('decodeDigest() carries the money for this call and the running total', () => {
+  const d = decodeDigest({
+    now: 'ok',
+    cost: 0.01808,
+    currency: '¥',
+    totals: { calls: 3, input: 11400, output: 360, cost: 0.054 },
+  })
+  assert.equal(d.cost, 0.01808)
+  assert.equal(d.currency, '¥')
+  assert.equal(d.totals.cost, 0.054)
+  assert.equal(decodeDigest({ now: 'ok' }).cost, null)
+})
+
 console.log('\nwhat this session is')
 
 check('goalOf() uses the declared goal', () => {
@@ -228,17 +251,25 @@ console.log('\nthe host\'s answer')
 
 check('decodeDigest() keeps the two sentences and the reported usage', () => {
   const d = decodeDigest({ intro: '做并表', now: '跑完了，卡在映射。', usage: { input: 3800, output: 120 } })
-  assert.deepEqual(d, { intro: '做并表', now: '跑完了，卡在映射。', open: [], usage: { input: 3800, output: 120 }, totals: null })
+  assert.deepEqual(d, {
+    intro: '做并表',
+    now: '跑完了，卡在映射。',
+    open: [],
+    usage: { input: 3800, output: 120 },
+    cost: null,
+    currency: '¥',
+    totals: null,
+  })
 })
 
 check('decodeDigest() carries the open list and the running total', () => {
   const d = decodeDigest({
     now: 'ok',
     open: ['等你定口径', '  ', '确认后补字段'],
-    totals: { calls: 12, input: 87000, output: 14000 },
+    totals: { calls: 12, input: 87000, output: 14000, cost: 0.4 },
   })
   assert.deepEqual(d.open, ['等你定口径', '确认后补字段'])
-  assert.deepEqual(d.totals, { calls: 12, input: 87000, output: 14000 })
+  assert.deepEqual(d.totals, { calls: 12, input: 87000, output: 14000, cost: 0.4 })
 })
 
 check('decodeDigest() rejects anything without a "now" sentence', () => {
@@ -250,7 +281,15 @@ check('decodeDigest() rejects anything without a "now" sentence', () => {
 })
 
 check('decodeDigest() treats a missing intro or usage as absent, not as an error', () => {
-  assert.deepEqual(decodeDigest({ now: 'ok' }), { intro: '', now: 'ok', open: [], usage: null, totals: null })
+  assert.deepEqual(decodeDigest({ now: 'ok' }), {
+    intro: '',
+    now: 'ok',
+    open: [],
+    usage: null,
+    cost: null,
+    currency: '¥',
+    totals: null,
+  })
   assert.equal(decodeDigest({ now: 'ok', usage: { input: 0, output: 0 } }).usage, null)
   assert.equal(decodeDigest({ now: 'ok', usage: 'junk' }).usage, null)
 })

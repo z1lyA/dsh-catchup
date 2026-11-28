@@ -10,3 +10,9 @@
         maxMessages: 8          # how many recent messages feed the model
         maxInputBytes: 12000    # hard cut, oldest dropped first
         cooldownMs: 30000       # after a failure, wait before trying again
+        # CNY per million tokens. Defaults: models.dev list price for DeepSeek
+        # V4.1 Flash (USD 0.6 in / 3.6 out) at 1 USD ≈ 6.67 CNY, off-peak.
+        # Weekday 09:00-12:00 and 14:00-18:00 Beijing time bill double.
+        priceInputPerMTok: 4
+        priceOutputPerMTok: 24
+        currency: '¥'

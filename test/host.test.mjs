@@ -137,6 +137,14 @@ await checkAsync('carries what is waiting on the human, straight from the answer
   assert.deepEqual(res.body.open, ['等你定映射口径', '确认后我补剩下 6 个字段'])
 })
 
+await checkAsync('prices the call from the configured rate', async () => {
+  const res = await call('http://x/api/session-digest?sessionId=s1')
+  // 3800/1e6*4 + 120/1e6*24
+  assert.ok(Math.abs(res.body.cost - 0.01808) < 1e-9, 'cost was ' + res.body.cost)
+  assert.equal(res.body.currency, '¥')
+  assert.ok(Math.abs(res.body.totals.cost - 0.01808) < 1e-9, 'totals.cost was ' + res.body.totals.cost)
+})
+
 await checkAsync('adds this call to a running total the panel can show', async () => {
   const res = await call('http://x/api/session-digest?sessionId=s1')
   assert.equal(res.body.totals.calls, 1)
