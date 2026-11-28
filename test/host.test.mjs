@@ -157,7 +157,7 @@ check('the model was asked for the three fields, with the session\'s own route',
   const options = state.calls[0]
   assert.equal(options.provider, 'wb-proxy')
   assert.equal(options.model, 'deepseek-v4.1-flash')
-  assert.equal(options.maxTokens, 5000, 'the cap has to cover reasoning, which comes first')
+  assert.equal(options.maxTokens, 2200, 'the cap covers reasoning but no longer overshoots')
   assert.equal(options.temperature, 0)
   assert.ok(typeof options.system === 'string' && options.system.length > 20)
   for (const field of ['"intro"', '"now"', '"open"']) {
@@ -184,12 +184,23 @@ await checkAsync('a second open with no new activity costs nothing', async () =>
 })
 
 await checkAsync('a session that moved on gets a fresh answer', async () => {
-  sessions.s1.seq = 43
+  const more = sessions.s1.deriveMessages().concat([userMsg('再问一件'), botMsg('好'), userMsg('又问一件'), botMsg('好')])
+  sessions.s1 = makeSession('s1', 43, more)
   const before = state.calls.length
   const res = await call('http://x/api/session-digest?sessionId=s1')
   assert.equal(res.status, 200, res.raw)
   assert.equal(state.calls.length, before + 1)
   assert.equal(res.body.coveredThroughSeq, 43)
+})
+
+await checkAsync('one new turn is not worth a new call — the cached glance stands', async () => {
+  const one = sessions.s1.deriveMessages().concat([userMsg('只加一句'), botMsg('好')])
+  sessions.s1 = makeSession('s1', 44, one)
+  const before = state.calls.length
+  const res = await call('http://x/api/session-digest?sessionId=s1')
+  assert.equal(res.status, 200, res.raw)
+  assert.equal(state.calls.length, before, 'a single turn must not trigger a rewrite')
+  assert.equal(res.body.coveredThroughSeq, 43, 'the cached digest is still what is shown')
 })
 
 await checkAsync('feeds the whole arc, not only the tail', async () => {

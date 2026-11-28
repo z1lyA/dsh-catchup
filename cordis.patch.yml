@@ -6,8 +6,10 @@
       name: dsh-catchup
       config:
         timeoutMs: 45000        # hard cap on the model call
-        maxOutputTokens: 5000   # reasoning tokens count against this, and they come first
+        maxOutputTokens: 2200   # covers reasoning; output was 62% of the bill
         maxInputBytes: 24000    # head + sampled middle + tail of the whole session
+        minNewTurns: 2          # regenerate only after this many new human turns
+        maxAgeMs: 600000        # ...or when the cached digest is older than 10 min
         cooldownMs: 30000       # after a failure, wait before trying again
         # CNY per million tokens. Defaults: models.dev list price for DeepSeek
         # V4.1 Flash (USD 0.6 in / 3.6 out) at 1 USD ≈ 6.67 CNY, off-peak.
